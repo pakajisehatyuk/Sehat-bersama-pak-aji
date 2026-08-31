@@ -588,6 +588,7 @@ const MENUS = [
   { id: 6, nama: "Sup Bening Sayur & Tahu", kategori: "Makan Malam", kkal: 210, protein: 12, tag: "Rendah Kalori", tagColor: "red", img: "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=300&h=220&fit=crop" },
   { id: 7, nama: "Jus Buah Naga Tanpa Gula", kategori: "Snack", kkal: 90, protein: 2, tag: "Segar", tagColor: "green", img: "https://images.unsplash.com/photo-1622597467836-f3285f2131b8?w=300&h=220&fit=crop" },
   { id: 8, nama: "Segenggam Kacang Almond", kategori: "Snack", kkal: 120, protein: 5, tag: "Mengenyangkan", tagColor: "green", img: "https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=300&h=220&fit=crop" },
+  { id: 9, nama: "Salad Sayur Segar", kategori: "Makan Siang", kkal: 190, protein: 6, tag: "Tinggi Serat", tagColor: "green", img: "salad-sayur.jpg" },
 ];
 
 function highlightMatch(text, query) {
@@ -942,6 +943,9 @@ const RECIPES = [
   { id: 6, nama: "Segenggam Kacang Almond Panggang", kategori: "Camilan", kkal: 120, waktu: "10 menit", porsi: 1, tag: "Mengenyangkan", tagColor: "green", img: "https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=400&h=280&fit=crop",
     bahan: ["30 g kacang almond mentah", "Sejumput garam laut (opsional)"],
     langkah: ["Panaskan wajan anti lengket tanpa minyak.", "Sangrai kacang almond dengan api kecil sambil terus diaduk.", "Angkat setelah harum dan sedikit kecokelatan, taburi garam laut tipis.", "Dinginkan sebelum disimpan dalam wadah kedap udara."] },
+  { id: 14, nama: "Salad Sayur Segar", kategori: "Makan Siang", kkal: 190, waktu: "15 menit", porsi: 2, tag: "Tinggi Serat", tagColor: "green", img: "salad-sayur.jpg",
+    bahan: ["2 lembar selada, sobek-sobek", "1 buah timun, iris tipis", "1 buah tomat, potong dadu", "1/2 buah paprika merah, iris tipis", "1/4 buah kol ungu, iris halus", "2 sdm jagung manis rebus", "1 butir telur rebus, belah dua (opsional, tambahan protein)", "2 sdm minyak zaitun", "1 sdm air jeruk nipis", "1/2 sdt madu", "Garam & merica secukupnya"],
+    langkah: ["Cuci bersih semua sayuran, tiriskan hingga kering.", "Sobek selada, iris timun, tomat, paprika, dan kol ungu sesuai selera.", "Tata semua sayuran dalam mangkuk saji, tambahkan jagung manis dan telur rebus.", "Campur bahan dressing: minyak zaitun, air jeruk nipis, madu, garam, dan merica, aduk rata.", "Siram dressing di atas salad sesaat sebelum disajikan agar sayuran tetap segar dan renyah."] },
   { id: 7, nama: "Sambal Kecap", kategori: "Sambal", kkal: 90, waktu: "10 menit", porsi: 4, tag: "Cocolan Pedas", tagColor: "red", img: "sambal/sambal-kecap.jpg",
     bahan: ["5 sdm kecap manis", "5-7 buah cabai rawit, iris tipis (sesuai selera)", "2 siung bawang merah, iris tipis", "1 siung bawang putih, iris halus (opsional)", "1 buah tomat kecil, potong dadu", "1 sdt air jeruk limau atau jeruk nipis", "Sejumput garam (opsional)"],
     langkah: ["Siapkan mangkuk kecil, masukkan kecap manis sebagai bahan utama.", "Tambahkan cabai rawit, bawang merah, dan bawang putih.", "Masukkan potongan tomat.", "Beri perasan jeruk limau agar lebih segar.", "Aduk rata, koreksi rasa, sambal kecap siap disajikan."] },
