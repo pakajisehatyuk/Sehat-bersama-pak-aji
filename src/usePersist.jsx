@@ -32,22 +32,23 @@ const PersistContext = createContext(null);
  */
 export function PersistProvider({ uid, children }) {
   const [data, setData] = useState(readLocalBlob);
-  const writeTimer = useRef(null);
-  const applyingRemote = useRef(false);
+  // One debounce timer PER KEY, so rapid changes to different keys
+  // (e.g. checking several boxes quickly) don't cancel each other's
+  // cloud write — only same-key spam gets debounced.
+  const writeTimers = useRef({});
 
   // Subscribe to the user's cloud document when logged in + Firebase is set up.
   useEffect(() => {
     if (!uid || !isFirebaseConfigured) return;
     const ref = doc(db, "users", uid);
     const unsub = onSnapshot(ref, (snap) => {
-      if (snap.exists()) {
-        applyingRemote.current = true;
-        setData((prev) => {
-          const merged = { ...prev, ...snap.data() };
-          writeLocalBlob(merged);
-          return merged;
-        });
-      }
+      // The cloud document is the full picture, not a partial patch —
+      // replace local state with it instead of merging. Merging meant a
+      // key removed on the server (e.g. by Reset) could never disappear
+      // locally, since spreading {} over the old state changes nothing.
+      const remote = snap.exists() ? snap.data() : {};
+      setData(remote);
+      writeLocalBlob(remote);
     });
     return unsub;
   }, [uid]);
@@ -60,8 +61,8 @@ export function PersistProvider({ uid, children }) {
     });
 
     if (uid && isFirebaseConfigured) {
-      clearTimeout(writeTimer.current);
-      writeTimer.current = setTimeout(() => {
+      clearTimeout(writeTimers.current[key]);
+      writeTimers.current[key] = setTimeout(() => {
         setDoc(doc(db, "users", uid), { [key]: value }, { merge: true }).catch(() => {
           // offline — persistentLocalCache queues this automatically and
           // Firestore will retry once the connection is back.
@@ -70,8 +71,27 @@ export function PersistProvider({ uid, children }) {
     }
   }
 
+  /**
+   * Reset everything — clears in-memory state immediately (so the UI
+   * updates instantly, no reload race), then clears localStorage and
+   * the cloud document to match.
+   */
+  async function resetAll() {
+    Object.values(writeTimers.current).forEach(clearTimeout);
+    writeTimers.current = {};
+    setData({});
+    writeLocalBlob({});
+    if (uid && isFirebaseConfigured) {
+      try {
+        await setDoc(doc(db, "users", uid), {}, { merge: false });
+      } catch {
+        // offline — local reset still applies; cloud clears once back online
+      }
+    }
+  }
+
   return (
-    <PersistContext.Provider value={{ data, setKey }}>{children}</PersistContext.Provider>
+    <PersistContext.Provider value={{ data, setKey, resetAll }}>{children}</PersistContext.Provider>
   );
 }
 
@@ -88,9 +108,11 @@ export function usePersistentState(key, initialValue) {
   return [value, setValue];
 }
 
-export function clearAllPersistedData(uid) {
-  writeLocalBlob({});
-  if (uid && isFirebaseConfigured) {
-    setDoc(doc(db, "users", uid), {}, { merge: false }).catch(() => {});
+/** Returns a function that resets all persisted data (local + cloud). */
+export function usePersistReset() {
+  const ctx = useContext(PersistContext);
+  if (!ctx) {
+    throw new Error("usePersistReset must be used inside <PersistProvider>");
   }
+  return ctx.resetAll;
 }

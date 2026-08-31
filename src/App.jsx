@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from "react";
-import { usePersistentState, PersistProvider, clearAllPersistedData } from "./usePersist.jsx";
+import { usePersistentState, PersistProvider, usePersistReset } from "./usePersist.jsx";
 import { useAuth } from "./useAuth.js";
 import AuthScreen from "./AuthScreen.jsx";
 
@@ -1105,6 +1105,7 @@ const MENU_ITEMS_PROFIL = [
 ];
 
 function ProfilScreen({ onBack, ping, auth, uid }) {
+  const resetAll = usePersistReset();
   const [nama, setNama] = usePersistentState("profil_nama", auth?.user?.displayName || "Sahabat Sehat");
   const [editing, setEditing] = useState(false);
   const [tempNama, setTempNama] = useState(nama);
@@ -1215,11 +1216,11 @@ function ProfilScreen({ onBack, ping, auth, uid }) {
               <button style={sProfil.modalCancel} onClick={() => setConfirmReset(false)}>Batal</button>
               <button
                 style={sProfil.modalConfirm}
-                onClick={() => {
-                  clearAllPersistedData(uid);
+                onClick={async () => {
                   setConfirmReset(false);
-                  ping("Semua data direset — memuat ulang... 🔄");
-                  setTimeout(() => window.location.reload(), 900);
+                  ping("Mereset semua data... 🔄");
+                  await resetAll();
+                  setTimeout(() => window.location.reload(), 400);
                 }}
               >
                 Reset
