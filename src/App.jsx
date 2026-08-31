@@ -219,7 +219,7 @@ function BerandaScreen({ onNavigate, ping }) {
       </div>
       <div style={sBeranda.jadwalCard}>
         <div style={sBeranda.jadwalTop}>
-          <img src="https://images.unsplash.com/photo-1517673132405-a56a62b18caf?w=120&h=120&fit=crop" alt="Sarapan" style={sBeranda.jadwalImg} />
+          <img src="sarapan-bubur-oat.jpg" alt="Sarapan" style={sBeranda.jadwalImg} />
           <div style={{ flex: 1 }}>
             <h5 style={sBeranda.jadwalName}>Sarapan</h5>
             <p style={sBeranda.jadwalDesc}>Bubur Oat Madura + Buah Naga</p>
@@ -442,7 +442,7 @@ const sKal = {
 
 const DAYS = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
 const DEFAULT_MEALS = [
-  { id: 1, waktu: "07:00", tipe: "Sarapan", nama: "Bubur Oat Madura + Buah Naga", kkal: 320, img: "https://images.unsplash.com/photo-1517673132405-a56a62b18caf?w=120&h=120&fit=crop", done: true },
+  { id: 1, waktu: "07:00", tipe: "Sarapan", nama: "Bubur Oat Madura + Buah Naga", kkal: 320, img: "sarapan-bubur-oat.jpg", done: true },
   { id: 2, waktu: "10:00", tipe: "Snack Pagi", nama: "Segenggam Kacang Almond", kkal: 120, img: "https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=120&h=120&fit=crop", done: true },
   { id: 3, waktu: "12:30", tipe: "Makan Siang", nama: "Pecel Madura Sehat + Tahu", kkal: 420, img: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=120&h=120&fit=crop", done: false },
   { id: 4, waktu: "16:00", tipe: "Snack Sore", nama: "Jus Buah Naga Tanpa Gula", kkal: 90, img: "https://images.unsplash.com/photo-1622597467836-f3285f2131b8?w=120&h=120&fit=crop", done: false },
@@ -580,7 +580,7 @@ const sJadwal = {
 const CATEGORIES_MENU = ["Semua", "Sarapan", "Makan Siang", "Makan Malam", "Snack"];
 const POPULAR_SEARCHES = ["ikan bakar", "rendah kalori", "protein", "sarapan", "kacang"];
 const MENUS = [
-  { id: 1, nama: "Bubur Oat Madura + Buah Naga", kategori: "Sarapan", kkal: 320, protein: 9, tag: "Rendah Kalori", tagColor: "red", img: "https://images.unsplash.com/photo-1517673132405-a56a62b18caf?w=300&h=220&fit=crop" },
+  { id: 1, nama: "Bubur Oat Madura + Buah Naga", kategori: "Sarapan", kkal: 320, protein: 9, tag: "Rendah Kalori", tagColor: "red", img: "sarapan-bubur-oat.jpg" },
   { id: 2, nama: "Roti Gandum Isi Telur & Alpukat", kategori: "Sarapan", kkal: 280, protein: 14, tag: "Tinggi Protein", tagColor: "red", img: "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=300&h=220&fit=crop" },
   { id: 3, nama: "Pecel Madura Sehat", kategori: "Makan Siang", kkal: 420, protein: 16, tag: "Tinggi Serat", tagColor: "green", img: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=300&h=220&fit=crop" },
   { id: 4, nama: "Soto Ayam Khas Madura", kategori: "Makan Siang", kkal: 310, protein: 22, tag: "Rendah Kalori", tagColor: "red", img: "https://images.unsplash.com/photo-1547592180-85f173990554?w=300&h=220&fit=crop" },
@@ -933,7 +933,7 @@ const RECIPES = [
   { id: 3, nama: "Ikan Bakar Bumbu Rujak", kategori: "Makan Malam", kkal: 380, waktu: "40 menit", porsi: 2, tag: "Tinggi Protein", tagColor: "red", img: "https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=280&fit=crop",
     bahan: ["2 ekor ikan tongkol, bersihkan", "5 buah cabai merah besar", "3 siung bawang merah", "2 siung bawang putih", "2 cm terasi bakar", "1 sdm gula merah", "Air jeruk nipis secukupnya", "Garam secukupnya"],
     langkah: ["Lumuri ikan dengan air jeruk nipis dan garam, diamkan 15 menit.", "Haluskan cabai, bawang merah, bawang putih, dan terasi.", "Tumis bumbu halus dengan sedikit minyak hingga matang, tambahkan gula merah.", "Lumuri ikan dengan setengah bumbu, bakar sambil sesekali diolesi bumbu.", "Bakar hingga matang dan sedikit kecokelatan, sajikan dengan sisa bumbu sebagai olesan."] },
-  { id: 4, nama: "Bubur Oat Madura + Buah Naga", kategori: "Sarapan", kkal: 320, waktu: "15 menit", porsi: 1, tag: "Rendah Kalori", tagColor: "red", img: "https://images.unsplash.com/photo-1517673132405-a56a62b18caf?w=400&h=280&fit=crop",
+  { id: 4, nama: "Bubur Oat Madura + Buah Naga", kategori: "Sarapan", kkal: 320, waktu: "15 menit", porsi: 1, tag: "Rendah Kalori", tagColor: "red", img: "sarapan-bubur-oat.jpg",
     bahan: ["50 g oat instan", "200 ml susu rendah lemak atau air", "1/2 buah naga, potong dadu", "1 sdt madu (opsional)", "Sejumput kayu manis bubuk"],
     langkah: ["Masak oat dengan susu atau air sambil diaduk hingga mengental.", "Tuang ke mangkuk, biarkan sedikit hangat.", "Tata potongan buah naga di atasnya.", "Tambahkan madu dan taburan kayu manis sebelum disajikan."] },
   { id: 5, nama: "Sup Bening Sayur & Tahu", kategori: "Makan Malam", kkal: 210, waktu: "20 menit", porsi: 2, tag: "Rendah Kalori", tagColor: "red", img: "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=280&fit=crop",
