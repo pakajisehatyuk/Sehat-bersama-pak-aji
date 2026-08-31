@@ -922,7 +922,7 @@ const sArtikel = {
    8. RESEP SEHAT
 ============================================================ */
 
-const CATEGORIES_RESEP = ["Semua", "Sarapan", "Makan Siang", "Makan Malam", "Camilan"];
+const CATEGORIES_RESEP = ["Semua", "Sarapan", "Makan Siang", "Makan Malam", "Camilan", "Sambal"];
 const RECIPES = [
   { id: 1, nama: "Soto Ayam Khas Madura", kategori: "Makan Siang", kkal: 310, waktu: "35 menit", porsi: 2, tag: "Rendah Kalori", tagColor: "red", img: "https://images.unsplash.com/photo-1547592180-85f173990554?w=400&h=280&fit=crop",
     bahan: ["300 g dada ayam, rebus & suwir", "1 liter kaldu ayam", "2 batang serai, memarkan", "3 lembar daun jeruk", "2 cm kunyit, bakar sebentar", "3 siung bawang putih", "5 butir bawang merah", "Garam & merica secukupnya", "Tauge, soun, dan seledri untuk pelengkap"],
@@ -942,7 +942,29 @@ const RECIPES = [
   { id: 6, nama: "Segenggam Kacang Almond Panggang", kategori: "Camilan", kkal: 120, waktu: "10 menit", porsi: 1, tag: "Mengenyangkan", tagColor: "green", img: "https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=400&h=280&fit=crop",
     bahan: ["30 g kacang almond mentah", "Sejumput garam laut (opsional)"],
     langkah: ["Panaskan wajan anti lengket tanpa minyak.", "Sangrai kacang almond dengan api kecil sambil terus diaduk.", "Angkat setelah harum dan sedikit kecokelatan, taburi garam laut tipis.", "Dinginkan sebelum disimpan dalam wadah kedap udara."] },
+  { id: 7, nama: "Sambal Kecap", kategori: "Sambal", kkal: 90, waktu: "10 menit", porsi: 4, tag: "Cocolan Pedas", tagColor: "red", img: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=280&fit=crop",
+    bahan: ["5 sdm kecap manis", "5-7 buah cabai rawit, iris tipis (sesuai selera)", "2 siung bawang merah, iris tipis", "1 siung bawang putih, iris halus (opsional)", "1 buah tomat kecil, potong dadu", "1 sdt air jeruk limau atau jeruk nipis", "Sejumput garam (opsional)"],
+    langkah: ["Siapkan mangkuk kecil, masukkan kecap manis sebagai bahan utama.", "Tambahkan cabai rawit, bawang merah, dan bawang putih.", "Masukkan potongan tomat.", "Beri perasan jeruk limau agar lebih segar.", "Aduk rata, koreksi rasa, sambal kecap siap disajikan."] },
+  { id: 8, nama: "Sambal Rampai Pedas Asem Seger", kategori: "Sambal", kkal: 25, waktu: "15 menit", porsi: 3, tag: "Segar & Asam", tagColor: "green", img: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop",
+    bahan: ["20 buah cabai rawit merah kecil", "1 sdt terasi bakar", "6-8 buah tomat rampai", "Garam, gula, micin secukupnya", "Perasan jeruk nipis secukupnya"],
+    langkah: ["Ulek cabai mentah, lalu tambahkan terasi, garam, gula, dan micin, ulek kasar.", "Tambahkan tomat rampai 6-8 buah, ulek kasar saja.", "Kalau mau lebih asam dan becek, tambahkan lagi tomat rampai, cicipi sampai sesuai selera.", "Tambahkan perasan jeruk nipis untuk rasa yang lebih segar."] },
+  { id: 9, nama: "Sambal Matah Segar Pedas", kategori: "Sambal", kkal: 110, waktu: "20 menit", porsi: 4, tag: "Pedas Wangi", tagColor: "red", img: "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=280&fit=crop",
+    bahan: ["10 butir bawang merah, iris tipis", "5 siung bawang putih, iris tipis", "10 buah cabai rawit merah (sesuai selera pedas)", "3 batang serai, ambil bagian putih, iris halus", "5 lembar daun jeruk, buang tulang daun, iris tipis", "1/2 sdt garam", "1/2 sdt gula pasir", "1 buah jeruk limau", "100 ml minyak goreng panas"],
+    langkah: ["Iris tipis bawang merah, bawang putih, serai, cabai, dan daun jeruk.", "Campur semua bahan iris ke dalam wadah, tambahkan garam, gula, dan air jeruk limau.", "Panaskan minyak goreng hingga benar-benar panas, tuang sedikit demi sedikit ke campuran bahan — ini yang bikin aroma khasnya keluar.", "Aduk rata semua bahan, koreksi rasa. Tambah irisan cabai kalau ingin lebih pedas.", "Sambal matah siap disajikan bersama nasi hangat, ayam goreng, ikan bakar, atau tempe goreng."] },
+  { id: 10, nama: "Sambal Ijo Padang", kategori: "Sambal", kkal: 40, waktu: "25 menit", porsi: 4, tag: "Khas Padang", tagColor: "green", img: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=280&fit=crop",
+    bahan: ["15 buah cabai keriting hijau", "15 buah cabai rawit hijau", "3 siung bawang merah", "2 siung bawang putih", "1 buah tomat hijau ukuran sedang", "2 lembar daun salam", "3 lembar daun jeruk", "1 batang serai"],
+    langkah: ["Bersihkan semua bahan.", "Didihkan air, rebus sebentar cabai, bawang, dan tomat, angkat lalu ulek kasar.", "Tumis bahan yang sudah diulek, tambahkan daun jeruk, daun salam, dan serai.", "Bumbui dengan garam dan penyedap, koreksi rasa.", "Angkat dan siap dihidangkan."] },
+  { id: 11, nama: "Sambal Bawang", kategori: "Sambal", kkal: 60, waktu: "20 menit", porsi: 5, tag: "Awet & Tahan Lama", tagColor: "red", img: "https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=280&fit=crop",
+    bahan: ["100 g bawang merah", "100 g bawang putih", "250 g cabai rawit merah (sesuaikan selera)", "1 sdt garam", "1/2 sdt kaldu jamur", "1 sdm gula"],
+    langkah: ["Kukus semua cabai dan bawang sampai empuk.", "Ulek kasar sampai pecah saja.", "Tambahkan garam, gula, dan kaldu bubuk.", "Tumis di minyak panas untuk sambal yang awet dan tahan lama — atau cukup siram minyak panas saja kalau untuk sekali makan (tanpa ditumis)."] },
+  { id: 12, nama: "Sambal Terasi", kategori: "Sambal", kkal: 50, waktu: "25 menit", porsi: 5, tag: "Klasik Gurih", tagColor: "green", img: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&h=280&fit=crop",
+    bahan: ["20 buah cabai merah keriting", "20 buah cabai rawit", "6 siung bawang merah", "4 siung bawang putih", "1 buah terasi, digoreng", "6 buah tomat kecil", "1 buah gula merah", "1 sdt gula putih", "1 sdm peres garam"],
+    langkah: ["Goreng cabai merah, cabai rawit, bawang merah, dan bawang putih sampai agak layu.", "Angkat, lalu ulek bersama gula, garam, dan terasi goreng.", "Goreng tomat sampai layu dengan api kecil (jangan sampai gosong karena memengaruhi rasa).", "Tambahkan tomat goreng ke dalam ulekan, ulek lagi tapi jangan terlalu halus.", "Sambal siap dihidangkan."] },
+  { id: 13, nama: "Sambal Pecak", kategori: "Sambal", kkal: 35, waktu: "15 menit", porsi: 3, tag: "Sederhana", tagColor: "green", img: "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=400&h=280&fit=crop",
+    bahan: ["Cabai merah secukupnya", "Cabai hijau secukupnya", "2 buah tomat", "Bawang merah secukupnya", "Bawang putih secukupnya", "Gula, garam, dan micin secukupnya"],
+    langkah: ["Ulek cabai merah dan cabai hijau, tambahkan gula, garam, dan micin.", "Potong tomat, ulek bersama cabai.", "Potong dan goreng bawang, masukkan ke sambal, ulek sebentar.", "Sambal pecak siap disantap."] },
 ];
+
 
 function ResepScreen({ onBack, ping }) {
   const [category, setCategory] = useState("Semua");
