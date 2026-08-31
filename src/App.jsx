@@ -577,19 +577,8 @@ const sJadwal = {
    5. MENU DIET
 ============================================================ */
 
-const CATEGORIES_MENU = ["Semua", "Sarapan", "Makan Siang", "Makan Malam", "Snack"];
+const CATEGORIES_MENU = ["Semuanya", "Makanan", "Minuman", "Kue"];
 const POPULAR_SEARCHES = ["ikan bakar", "rendah kalori", "protein", "sarapan", "kacang"];
-const MENUS = [
-  { id: 1, nama: "Bubur Oat Madura + Buah Naga", kategori: "Sarapan", kkal: 320, protein: 9, tag: "Rendah Kalori", tagColor: "red", img: "sarapan-bubur-oat.jpg" },
-  { id: 2, nama: "Roti Gandum Isi Telur & Alpukat", kategori: "Sarapan", kkal: 280, protein: 14, tag: "Tinggi Protein", tagColor: "red", img: "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=300&h=220&fit=crop" },
-  { id: 3, nama: "Pecel Madura Sehat", kategori: "Makan Siang", kkal: 420, protein: 16, tag: "Tinggi Serat", tagColor: "green", img: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=300&h=220&fit=crop" },
-  { id: 4, nama: "Soto Ayam Khas Madura", kategori: "Makan Siang", kkal: 310, protein: 22, tag: "Rendah Kalori", tagColor: "red", img: "https://images.unsplash.com/photo-1547592180-85f173990554?w=300&h=220&fit=crop" },
-  { id: 5, nama: "Ikan Bakar Bumbu Rujak + Lalapan", kategori: "Makan Malam", kkal: 380, protein: 28, tag: "Tinggi Protein", tagColor: "red", img: "https://images.unsplash.com/photo-1544025162-d76694265947?w=300&h=220&fit=crop" },
-  { id: 6, nama: "Sup Bening Sayur & Tahu", kategori: "Makan Malam", kkal: 210, protein: 12, tag: "Rendah Kalori", tagColor: "red", img: "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=300&h=220&fit=crop" },
-  { id: 7, nama: "Jus Buah Naga Tanpa Gula", kategori: "Snack", kkal: 90, protein: 2, tag: "Segar", tagColor: "green", img: "https://images.unsplash.com/photo-1622597467836-f3285f2131b8?w=300&h=220&fit=crop" },
-  { id: 8, nama: "Segenggam Kacang Almond", kategori: "Snack", kkal: 120, protein: 5, tag: "Mengenyangkan", tagColor: "green", img: "https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=300&h=220&fit=crop" },
-  { id: 9, nama: "Salad Ayam Panggang", kategori: "Makan Siang", kkal: 340, protein: 26, tag: "Tinggi Protein", tagColor: "red", img: "salad-sayur.jpg" },
-];
 
 function highlightMatch(text, query) {
   if (!query.trim()) return text;
@@ -599,19 +588,22 @@ function highlightMatch(text, query) {
   return (<>{before}<mark style={{ background: "#fde3e0", color: "#b5121a", borderRadius: 3, padding: "0 1px" }}>{match}</mark>{after}</>);
 }
 
-function MenuScreen({ onBack, ping }) {
-  const [category, setCategory] = useState("Semua");
+function MenuScreen({ onBack, ping, onNavigate }) {
+  const [category, setCategory] = useState("Semuanya");
   const [query, setQuery] = useState("");
   const [saved, setSaved] = usePersistentState("menu_saved", {});
   const [added, setAdded] = usePersistentState("menu_added", {});
   const [recent, setRecent] = usePersistentState("menu_recent", []);
   const [searchFocused, setSearchFocused] = useState(false);
+  const [menuDietIds] = usePersistentState("resep_menuDietIds", DEFAULT_MENU_DIET_IDS);
 
-  const filtered = useMemo(() => MENUS.filter((m) => {
-    const matchCat = category === "Semua" || m.kategori === category;
+  const menuItems = useMemo(() => RECIPES.filter((r) => menuDietIds.includes(r.id)), [menuDietIds]);
+
+  const filtered = useMemo(() => menuItems.filter((m) => {
+    const matchCat = category === "Semuanya" || m.jenis === category;
     const matchQuery = m.nama.toLowerCase().includes(query.toLowerCase());
     return matchCat && matchQuery;
-  }), [category, query]);
+  }), [menuItems, category, query]);
 
   function commitSearch(term) {
     const t = term.trim();
@@ -657,22 +649,34 @@ function MenuScreen({ onBack, ping }) {
 
       <div style={{ padding: "0 20px" }}>
         <p style={sMenu.resultCount}>{filtered.length} menu ditemukan</p>
-        {filtered.length === 0 && <div style={sMenu.emptyState}><div style={{ fontSize: 32, marginBottom: 8 }}>🍽️</div><p style={{ fontSize: 12.5, color: "#8a7b70" }}>Menu tidak ditemukan, coba kata kunci lain.</p></div>}
-        {filtered.map((m) => (
-          <div key={m.id} style={sMenu.menuCard}>
-            <div style={{ ...sMenu.menuThumb, backgroundImage: `url(${m.img})` }}>
-              <button style={sMenu.bookmarkBtn} onClick={() => toggleSave(m.id, m.nama)}>{saved[m.id] ? "🔖" : "📑"}</button>
-            </div>
-            <div style={sMenu.menuInfo}>
-              <span style={{ ...sMenu.tag, background: m.tagColor === "red" ? "#fde3e0" : "#e2f2e0", color: m.tagColor === "red" ? "#d81f27" : "#3a7d44" }}>{m.tag}</span>
-              <h5 style={sMenu.menuName}>{highlightMatch(m.nama, query)}</h5>
-              <div style={sMenu.menuMeta}><span>🔥 {m.kkal} kkal</span><span>💪 {m.protein}g protein</span></div>
-              <button style={{ ...sMenu.addBtn, ...(added[m.id] ? sMenu.addBtnDone : {}) }} onClick={() => addToJadwal(m.id, m.nama)} disabled={added[m.id]}>
-                {added[m.id] ? "✓ Ditambahkan" : "+ Tambah ke Jadwal"}
-              </button>
-            </div>
+
+        {menuItems.length === 0 ? (
+          <div style={sMenu.emptyState}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>🍽️</div>
+            <p style={{ fontSize: 12.5, color: "#8a7b70", lineHeight: 1.6 }}>
+              Belum ada menu dipilih.<br />Buka <b>Resep Sehat</b>, pilih resep, lalu tap <b>"+ Tambah ke Menu Diet"</b>.
+            </p>
+            <button style={sMenu.gotoResepBtn} onClick={() => onNavigate && onNavigate("resep")}>Buka Resep Sehat</button>
           </div>
-        ))}
+        ) : filtered.length === 0 ? (
+          <div style={sMenu.emptyState}><div style={{ fontSize: 32, marginBottom: 8 }}>🔍</div><p style={{ fontSize: 12.5, color: "#8a7b70" }}>Menu tidak ditemukan, coba kata kunci atau kategori lain.</p></div>
+        ) : (
+          filtered.map((m) => (
+            <div key={m.id} style={sMenu.menuCard}>
+              <div style={{ ...sMenu.menuThumb, backgroundImage: `url(${m.img})` }}>
+                <button style={sMenu.bookmarkBtn} onClick={() => toggleSave(m.id, m.nama)}>{saved[m.id] ? "🔖" : "📑"}</button>
+              </div>
+              <div style={sMenu.menuInfo}>
+                <span style={{ ...sMenu.tag, background: m.tagColor === "red" ? "#fde3e0" : "#e2f2e0", color: m.tagColor === "red" ? "#d81f27" : "#3a7d44" }}>{m.tag}</span>
+                <h5 style={sMenu.menuName}>{highlightMatch(m.nama, query)}</h5>
+                <div style={sMenu.menuMeta}><span>🔥 {m.kkal} kkal</span><span>⏱ {m.waktu}</span></div>
+                <button style={{ ...sMenu.addBtn, ...(added[m.id] ? sMenu.addBtnDone : {}) }} onClick={() => addToJadwal(m.id, m.nama)} disabled={added[m.id]}>
+                  {added[m.id] ? "✓ Ditambahkan" : "+ Tambah ke Jadwal"}
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </>
   );
@@ -692,7 +696,8 @@ const sMenu = {
   catBtn: { padding: "8px 14px", borderRadius: 20, border: "1px solid #f1e8dd", background: "#fff", color: "#8a7b70", fontWeight: 600, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" },
   catActive: { background: "#b5121a", color: "#fff", border: "1px solid #b5121a" },
   resultCount: { fontSize: 11, color: "#8a7b70", marginBottom: 10, fontWeight: 500 },
-  emptyState: { textAlign: "center", padding: "40px 0" },
+  emptyState: { textAlign: "center", padding: "40px 20px" },
+  gotoResepBtn: { marginTop: 14, background: "#b5121a", color: "#fff", border: "none", padding: "11px 22px", borderRadius: 20, fontWeight: 700, fontSize: 12.5, cursor: "pointer", boxShadow: "0 6px 14px rgba(181,18,26,.25)" },
   menuCard: { display: "flex", gap: 12, background: "#fff", borderRadius: 16, padding: 10, marginBottom: 12, border: "1px solid #f1e8dd", boxShadow: "0 4px 10px rgba(0,0,0,.04)" },
   menuThumb: { width: 92, height: 92, borderRadius: 12, backgroundSize: "cover", backgroundPosition: "center", position: "relative", flexShrink: 0 },
   bookmarkBtn: { position: "absolute", top: 6, right: 6, width: 22, height: 22, borderRadius: 6, background: "rgba(255,255,255,.9)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, cursor: "pointer" },
@@ -923,67 +928,94 @@ const sArtikel = {
    8. RESEP SEHAT
 ============================================================ */
 
-const CATEGORIES_RESEP = ["Semua", "Sarapan", "Makan Siang", "Makan Malam", "Camilan", "Sambal"];
+const CATEGORIES_RESEP = ["Semuanya", "Makanan", "Minuman", "Kue"];
+const DEFAULT_MENU_DIET_IDS = [4, 1, 2, 3, 5, 16, 6, 14];
 const RECIPES = [
-  { id: 1, nama: "Soto Ayam Khas Madura", kategori: "Makan Siang", kkal: 310, waktu: "35 menit", porsi: 2, tag: "Rendah Kalori", tagColor: "red", img: "https://images.unsplash.com/photo-1547592180-85f173990554?w=400&h=280&fit=crop",
+  { id: 1, nama: "Soto Ayam Khas Madura", jenis: "Makanan", kkal: 310, waktu: "35 menit", porsi: 2, tag: "Rendah Kalori", tagColor: "red", img: "https://images.unsplash.com/photo-1547592180-85f173990554?w=400&h=280&fit=crop",
     bahan: ["300 g dada ayam, rebus & suwir", "1 liter kaldu ayam", "2 batang serai, memarkan", "3 lembar daun jeruk", "2 cm kunyit, bakar sebentar", "3 siung bawang putih", "5 butir bawang merah", "Garam & merica secukupnya", "Tauge, soun, dan seledri untuk pelengkap"],
     langkah: ["Haluskan bawang putih, bawang merah, dan kunyit.", "Tumis bumbu halus bersama serai dan daun jeruk hingga harum.", "Masukkan bumbu tumis ke dalam kaldu ayam, masak dengan api kecil selama 15 menit.", "Tambahkan garam dan merica sesuai selera, koreksi rasa.", "Sajikan kuah panas dengan suwiran ayam, tauge, soun, dan taburan seledri."] },
-  { id: 2, nama: "Pecel Madura Sehat", kategori: "Makan Siang", kkal: 420, waktu: "25 menit", porsi: 2, tag: "Tinggi Serat", tagColor: "green", img: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop",
+  { id: 2, nama: "Pecel Madura Sehat", jenis: "Makanan", kkal: 420, waktu: "25 menit", porsi: 2, tag: "Tinggi Serat", tagColor: "green", img: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=280&fit=crop",
     bahan: ["1 ikat kangkung, rebus", "100 g tauge, rebus", "1 buah kacang panjang, rebus & potong", "100 g kacang tanah goreng", "2 buah cabai merah (sesuai selera)", "1 siung bawang putih", "1 sdm gula merah", "Garam & air asam jawa secukupnya"],
     langkah: ["Haluskan kacang tanah goreng bersama bawang putih dan cabai.", "Tambahkan gula merah, garam, dan air asam jawa, uleg hingga rata.", "Seduh bumbu kacang dengan sedikit air panas hingga kekentalan pas.", "Tata sayuran rebus di piring, siram dengan sambal pecel.", "Sajikan bersama kerupuk atau rempeyek sebagai pelengkap."] },
-  { id: 3, nama: "Ikan Bakar Bumbu Rujak", kategori: "Makan Malam", kkal: 380, waktu: "40 menit", porsi: 2, tag: "Tinggi Protein", tagColor: "red", img: "https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=280&fit=crop",
+  { id: 3, nama: "Ikan Bakar Bumbu Rujak", jenis: "Makanan", kkal: 380, waktu: "40 menit", porsi: 2, tag: "Tinggi Protein", tagColor: "red", img: "https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=280&fit=crop",
     bahan: ["2 ekor ikan tongkol, bersihkan", "5 buah cabai merah besar", "3 siung bawang merah", "2 siung bawang putih", "2 cm terasi bakar", "1 sdm gula merah", "Air jeruk nipis secukupnya", "Garam secukupnya"],
     langkah: ["Lumuri ikan dengan air jeruk nipis dan garam, diamkan 15 menit.", "Haluskan cabai, bawang merah, bawang putih, dan terasi.", "Tumis bumbu halus dengan sedikit minyak hingga matang, tambahkan gula merah.", "Lumuri ikan dengan setengah bumbu, bakar sambil sesekali diolesi bumbu.", "Bakar hingga matang dan sedikit kecokelatan, sajikan dengan sisa bumbu sebagai olesan."] },
-  { id: 4, nama: "Bubur Oat Madura + Buah Naga", kategori: "Sarapan", kkal: 320, waktu: "15 menit", porsi: 1, tag: "Rendah Kalori", tagColor: "red", img: "sarapan-bubur-oat.jpg",
+  { id: 4, nama: "Bubur Oat Madura + Buah Naga", jenis: "Makanan", kkal: 320, waktu: "15 menit", porsi: 1, tag: "Rendah Kalori", tagColor: "red", img: "sarapan-bubur-oat.jpg",
     bahan: ["50 g oat instan", "200 ml susu rendah lemak atau air", "1/2 buah naga, potong dadu", "1 sdt madu (opsional)", "Sejumput kayu manis bubuk"],
     langkah: ["Masak oat dengan susu atau air sambil diaduk hingga mengental.", "Tuang ke mangkuk, biarkan sedikit hangat.", "Tata potongan buah naga di atasnya.", "Tambahkan madu dan taburan kayu manis sebelum disajikan."] },
-  { id: 5, nama: "Sup Bening Sayur & Tahu", kategori: "Makan Malam", kkal: 210, waktu: "20 menit", porsi: 2, tag: "Rendah Kalori", tagColor: "red", img: "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=280&fit=crop",
+  { id: 5, nama: "Sup Bening Sayur & Tahu", jenis: "Makanan", kkal: 210, waktu: "20 menit", porsi: 2, tag: "Rendah Kalori", tagColor: "red", img: "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=280&fit=crop",
     bahan: ["5 potong tahu putih, potong dadu", "1 buah wortel, iris", "1 ikat sawi hijau", "2 siung bawang putih, cincang", "1 batang daun bawang", "700 ml air", "Garam & merica secukupnya"],
     langkah: ["Tumis bawang putih hingga harum, tuang air, didihkan.", "Masukkan wortel, masak hingga agak empuk.", "Tambahkan tahu, garam, dan merica, masak 5 menit.", "Masukkan sawi hijau dan daun bawang, masak sebentar hingga layu.", "Angkat dan sajikan selagi hangat."] },
-  { id: 6, nama: "Segenggam Kacang Almond Panggang", kategori: "Camilan", kkal: 120, waktu: "10 menit", porsi: 1, tag: "Mengenyangkan", tagColor: "green", img: "https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=400&h=280&fit=crop",
+  { id: 6, nama: "Segenggam Kacang Almond Panggang", jenis: "Kue", kkal: 120, waktu: "10 menit", porsi: 1, tag: "Mengenyangkan", tagColor: "green", img: "https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=400&h=280&fit=crop",
     bahan: ["30 g kacang almond mentah", "Sejumput garam laut (opsional)"],
     langkah: ["Panaskan wajan anti lengket tanpa minyak.", "Sangrai kacang almond dengan api kecil sambil terus diaduk.", "Angkat setelah harum dan sedikit kecokelatan, taburi garam laut tipis.", "Dinginkan sebelum disimpan dalam wadah kedap udara."] },
-  { id: 14, nama: "Salad Ayam Panggang", kategori: "Makan Siang", kkal: 340, waktu: "25 menit", porsi: 2, tag: "Tinggi Protein", tagColor: "red", img: "salad-sayur.jpg",
+  { id: 14, nama: "Salad Ayam Panggang", jenis: "Makanan", kkal: 340, waktu: "25 menit", porsi: 2, tag: "Tinggi Protein", tagColor: "red", img: "salad-sayur.jpg",
     bahan: ["200 g dada ayam fillet, potong dadu", "1 sdt bumbu panggang (garam, lada, bawang putih bubuk, paprika bubuk)", "1 sdt minyak zaitun untuk memanggang", "3-4 lembar selada, sobek-sobek", "1/4 kol ungu, iris tipis", "1 buah wortel, serut atau iris korek api", "1/2 buah timun, potong dadu", "2 butir telur rebus, belah dua", "100 g jagung manis pipil (bisa rebus atau kalengan rendah gula)", "Saus creamy/yoghurt untuk cocolan secukupnya"],
     langkah: ["Lumuri potongan dada ayam dengan bumbu panggang dan sedikit minyak zaitun, diamkan 10 menit.", "Panggang ayam di teflon atau oven sampai matang dan sedikit kecokelatan di luar.", "Rebus telur hingga matang, kupas dan belah dua.", "Tata selada, kol ungu, wortel, dan timun dalam kotak/mangkuk saji.", "Susun ayam panggang, telur rebus, dan jagung manis di atas sayuran.", "Sajikan dengan saus creamy/yoghurt terpisah sebagai cocolan agar sayuran tetap renyah."] },
-  { id: 7, nama: "Sambal Kecap", kategori: "Sambal", kkal: 90, waktu: "10 menit", porsi: 4, tag: "Cocolan Pedas", tagColor: "red", img: "sambal/sambal-kecap.jpg",
+  { id: 7, nama: "Sambal Kecap", jenis: "Makanan", kkal: 90, waktu: "10 menit", porsi: 4, tag: "Cocolan Pedas", tagColor: "red", img: "sambal/sambal-kecap.jpg",
     bahan: ["5 sdm kecap manis", "5-7 buah cabai rawit, iris tipis (sesuai selera)", "2 siung bawang merah, iris tipis", "1 siung bawang putih, iris halus (opsional)", "1 buah tomat kecil, potong dadu", "1 sdt air jeruk limau atau jeruk nipis", "Sejumput garam (opsional)"],
     langkah: ["Siapkan mangkuk kecil, masukkan kecap manis sebagai bahan utama.", "Tambahkan cabai rawit, bawang merah, dan bawang putih.", "Masukkan potongan tomat.", "Beri perasan jeruk limau agar lebih segar.", "Aduk rata, koreksi rasa, sambal kecap siap disajikan."] },
-  { id: 8, nama: "Sambal Rampai Pedas Asem Seger", kategori: "Sambal", kkal: 25, waktu: "15 menit", porsi: 3, tag: "Segar & Asam", tagColor: "green", img: "sambal/sambal-rampai.jpg",
+  { id: 8, nama: "Sambal Rampai Pedas Asem Seger", jenis: "Makanan", kkal: 25, waktu: "15 menit", porsi: 3, tag: "Segar & Asam", tagColor: "green", img: "sambal/sambal-rampai.jpg",
     bahan: ["20 buah cabai rawit merah kecil", "1 sdt terasi bakar", "6-8 buah tomat rampai", "Garam, gula, micin secukupnya", "Perasan jeruk nipis secukupnya"],
     langkah: ["Ulek cabai mentah, lalu tambahkan terasi, garam, gula, dan micin, ulek kasar.", "Tambahkan tomat rampai 6-8 buah, ulek kasar saja.", "Kalau mau lebih asam dan becek, tambahkan lagi tomat rampai, cicipi sampai sesuai selera.", "Tambahkan perasan jeruk nipis untuk rasa yang lebih segar."] },
-  { id: 9, nama: "Sambal Matah Segar Pedas", kategori: "Sambal", kkal: 110, waktu: "20 menit", porsi: 4, tag: "Pedas Wangi", tagColor: "red", img: "sambal/sambal-matah.jpg",
+  { id: 9, nama: "Sambal Matah Segar Pedas", jenis: "Makanan", kkal: 110, waktu: "20 menit", porsi: 4, tag: "Pedas Wangi", tagColor: "red", img: "sambal/sambal-matah.jpg",
     bahan: ["10 butir bawang merah, iris tipis", "5 siung bawang putih, iris tipis", "10 buah cabai rawit merah (sesuai selera pedas)", "3 batang serai, ambil bagian putih, iris halus", "5 lembar daun jeruk, buang tulang daun, iris tipis", "1/2 sdt garam", "1/2 sdt gula pasir", "1 buah jeruk limau", "100 ml minyak goreng panas"],
     langkah: ["Iris tipis bawang merah, bawang putih, serai, cabai, dan daun jeruk.", "Campur semua bahan iris ke dalam wadah, tambahkan garam, gula, dan air jeruk limau.", "Panaskan minyak goreng hingga benar-benar panas, tuang sedikit demi sedikit ke campuran bahan — ini yang bikin aroma khasnya keluar.", "Aduk rata semua bahan, koreksi rasa. Tambah irisan cabai kalau ingin lebih pedas.", "Sambal matah siap disajikan bersama nasi hangat, ayam goreng, ikan bakar, atau tempe goreng."] },
-  { id: 10, nama: "Sambal Ijo Padang", kategori: "Sambal", kkal: 40, waktu: "25 menit", porsi: 4, tag: "Khas Padang", tagColor: "green", img: "sambal/sambal-ijo.jpg",
+  { id: 10, nama: "Sambal Ijo Padang", jenis: "Makanan", kkal: 40, waktu: "25 menit", porsi: 4, tag: "Khas Padang", tagColor: "green", img: "sambal/sambal-ijo.jpg",
     bahan: ["15 buah cabai keriting hijau", "15 buah cabai rawit hijau", "3 siung bawang merah", "2 siung bawang putih", "1 buah tomat hijau ukuran sedang", "2 lembar daun salam", "3 lembar daun jeruk", "1 batang serai"],
     langkah: ["Bersihkan semua bahan.", "Didihkan air, rebus sebentar cabai, bawang, dan tomat, angkat lalu ulek kasar.", "Tumis bahan yang sudah diulek, tambahkan daun jeruk, daun salam, dan serai.", "Bumbui dengan garam dan penyedap, koreksi rasa.", "Angkat dan siap dihidangkan."] },
-  { id: 11, nama: "Sambal Bawang", kategori: "Sambal", kkal: 60, waktu: "20 menit", porsi: 5, tag: "Awet & Tahan Lama", tagColor: "red", img: "sambal/sambal-bawang.jpg",
+  { id: 11, nama: "Sambal Bawang", jenis: "Makanan", kkal: 60, waktu: "20 menit", porsi: 5, tag: "Awet & Tahan Lama", tagColor: "red", img: "sambal/sambal-bawang.jpg",
     bahan: ["100 g bawang merah", "100 g bawang putih", "250 g cabai rawit merah (sesuaikan selera)", "1 sdt garam", "1/2 sdt kaldu jamur", "1 sdm gula"],
     langkah: ["Kukus semua cabai dan bawang sampai empuk.", "Ulek kasar sampai pecah saja.", "Tambahkan garam, gula, dan kaldu bubuk.", "Tumis di minyak panas untuk sambal yang awet dan tahan lama — atau cukup siram minyak panas saja kalau untuk sekali makan (tanpa ditumis)."] },
-  { id: 12, nama: "Sambal Terasi", kategori: "Sambal", kkal: 50, waktu: "25 menit", porsi: 5, tag: "Klasik Gurih", tagColor: "green", img: "sambal/sambal-terasi.jpg",
+  { id: 12, nama: "Sambal Terasi", jenis: "Makanan", kkal: 50, waktu: "25 menit", porsi: 5, tag: "Klasik Gurih", tagColor: "green", img: "sambal/sambal-terasi.jpg",
     bahan: ["20 buah cabai merah keriting", "20 buah cabai rawit", "6 siung bawang merah", "4 siung bawang putih", "1 buah terasi, digoreng", "6 buah tomat kecil", "1 buah gula merah", "1 sdt gula putih", "1 sdm peres garam"],
     langkah: ["Goreng cabai merah, cabai rawit, bawang merah, dan bawang putih sampai agak layu.", "Angkat, lalu ulek bersama gula, garam, dan terasi goreng.", "Goreng tomat sampai layu dengan api kecil (jangan sampai gosong karena memengaruhi rasa).", "Tambahkan tomat goreng ke dalam ulekan, ulek lagi tapi jangan terlalu halus.", "Sambal siap dihidangkan."] },
-  { id: 13, nama: "Sambal Pecak", kategori: "Sambal", kkal: 35, waktu: "15 menit", porsi: 3, tag: "Sederhana", tagColor: "green", img: "sambal/sambal-pecak.jpg",
+  { id: 13, nama: "Sambal Pecak", jenis: "Makanan", kkal: 35, waktu: "15 menit", porsi: 3, tag: "Sederhana", tagColor: "green", img: "sambal/sambal-pecak.jpg",
     bahan: ["Cabai merah secukupnya", "Cabai hijau secukupnya", "2 buah tomat", "Bawang merah secukupnya", "Bawang putih secukupnya", "Gula, garam, dan micin secukupnya"],
     langkah: ["Ulek cabai merah dan cabai hijau, tambahkan gula, garam, dan micin.", "Potong tomat, ulek bersama cabai.", "Potong dan goreng bawang, masukkan ke sambal, ulek sebentar.", "Sambal pecak siap disantap."] },
+  { id: 15, nama: "Roti Gandum Isi Telur & Alpukat", jenis: "Makanan", kkal: 280, waktu: "10 menit", porsi: 1, tag: "Tinggi Protein", tagColor: "red", img: "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&h=280&fit=crop",
+    bahan: ["2 lembar roti gandum", "1 butir telur, orak-arik atau ceplok", "1/2 buah alpukat, lumatkan kasar", "Sejumput garam & merica", "Selada secukupnya (opsional)"],
+    langkah: ["Panggang roti gandum sebentar sampai renyah.", "Masak telur sesuai selera (orak-arik atau ceplok), bumbui garam dan merica.", "Oles alpukat lumat di atas satu lembar roti.", "Tata telur dan selada di atasnya, tutup dengan roti satunya.", "Potong menjadi dua dan sajikan."] },
+  { id: 16, nama: "Jus Buah Naga Tanpa Gula", jenis: "Minuman", kkal: 90, waktu: "5 menit", porsi: 1, tag: "Segar", tagColor: "green", img: "https://images.unsplash.com/photo-1622597467836-f3285f2131b8?w=400&h=280&fit=crop",
+    bahan: ["1 buah naga merah, potong dadu", "150 ml air dingin atau air kelapa", "Es batu secukupnya", "1 sdt madu (opsional)"],
+    langkah: ["Masukkan buah naga dan air ke dalam blender.", "Blender hingga halus.", "Tambahkan madu jika suka manis, aduk rata.", "Tuang ke gelas berisi es batu, sajikan segera."] },
+  { id: 17, nama: "Infused Water Lemon & Timun", jenis: "Minuman", kkal: 5, waktu: "5 menit", porsi: 1, tag: "Sangat Rendah Kalori", tagColor: "green", img: "infused-water.jpg",
+    bahan: ["1 buah lemon, iris tipis", "1/2 buah timun, iris tipis", "Beberapa lembar daun mint", "500 ml air putih dingin"],
+    langkah: ["Masukkan irisan lemon, timun, dan daun mint ke dalam botol atau kendi.", "Tuang air putih dingin.", "Diamkan di kulkas minimal 1 jam agar rasanya meresap.", "Minum sepanjang hari sebagai pengganti air putih biasa."] },
+  { id: 18, nama: "Es Teh Tawar Serai", jenis: "Minuman", kkal: 10, waktu: "15 menit", porsi: 2, tag: "Tanpa Gula", tagColor: "green", img: "es-teh-serai.jpg",
+    bahan: ["2 kantong teh celup atau 1 sdm teh hitam", "2 batang serai, memarkan", "500 ml air panas", "Es batu secukupnya"],
+    langkah: ["Seduh teh dan serai dengan air panas, biarkan 5-10 menit.", "Saring, buang ampas teh dan serai.", "Dinginkan air teh di suhu ruang atau kulkas.", "Sajikan dengan es batu, tanpa tambahan gula."] },
+  { id: 19, nama: "Puding Buah Naga Rendah Gula", jenis: "Kue", kkal: 80, waktu: "30 menit", porsi: 4, tag: "Rendah Gula", tagColor: "green", img: "puding-buah-naga.jpg",
+    bahan: ["1 buah naga merah, blender halus", "1 bungkus agar-agar plain", "500 ml air", "3 sdm gula rendah kalori (atau sesuai selera)", "Sejumput garam"],
+    langkah: ["Campur bubuk agar-agar dengan air, masak sambil diaduk hingga mendidih.", "Tambahkan gula rendah kalori dan garam, aduk rata.", "Matikan api, tuang jus buah naga blender, aduk cepat sampai merata.", "Tuang ke cetakan puding, dinginkan di kulkas sampai set.", "Sajikan dingin."] },
+  { id: 20, nama: "Kue Talam Ubi Ungu Kukus", jenis: "Kue", kkal: 110, waktu: "40 menit", porsi: 6, tag: "Kukus Sehat", tagColor: "green", img: "kue-talam-ubi-ungu.jpg",
+    bahan: ["250 g ubi ungu, kukus & haluskan", "100 g tepung beras", "400 ml santan encer (atau susu rendah lemak)", "3 sdm gula pasir atau gula rendah kalori", "Sejumput garam", "Daun pandan untuk aroma"],
+    langkah: ["Campur ubi ungu halus, tepung beras, santan, gula, dan garam, aduk rata tanpa gerindil.", "Masak adonan sambil diaduk di atas api kecil sampai sedikit mengental.", "Tuang ke cetakan kecil yang sudah diolesi minyak tipis.", "Kukus selama 20-25 menit hingga matang dan kenyal.", "Dinginkan sebentar sebelum dikeluarkan dari cetakan, sajikan."] },
 ];
 
 
 function ResepScreen({ onBack, ping }) {
-  const [category, setCategory] = useState("Semua");
+  const [category, setCategory] = useState("Semuanya");
   const [query, setQuery] = useState("");
   const [openRecipe, setOpenRecipe] = useState(null);
   const [saved, setSaved] = usePersistentState("resep_saved", {});
   const [servingsOverride, setServingsOverride] = usePersistentState("resep_servings", {});
+  const [menuDietIds, setMenuDietIds] = usePersistentState("resep_menuDietIds", DEFAULT_MENU_DIET_IDS);
 
   const filtered = useMemo(() => RECIPES.filter((r) => {
-    const matchCat = category === "Semua" || r.kategori === category;
+    const matchCat = category === "Semuanya" || r.jenis === category;
     const matchQuery = r.nama.toLowerCase().includes(query.toLowerCase());
     return matchCat && matchQuery;
   }), [category, query]);
 
   function toggleSave(id, nama) { setSaved((s) => { const next = { ...s, [id]: !s[id] }; ping(next[id] ? `${nama} disimpan 🔖` : "Dihapus dari simpanan"); return next; }); }
+  function toggleMenuDiet(id, nama) {
+    setMenuDietIds((prev) => {
+      const isIn = prev.includes(id);
+      ping(isIn ? `${nama} dihapus dari Menu Diet` : `${nama} ditambahkan ke Menu Diet ✅`);
+      return isIn ? prev.filter((x) => x !== id) : [...prev, id];
+    });
+  }
   function getServings(r) { return servingsOverride[r.id] ?? r.porsi; }
   function changeServings(r, delta) {
     setServingsOverride((s) => { const current = s[r.id] ?? r.porsi; return { ...s, [r.id]: Math.max(1, Math.min(8, current + delta)) }; });
@@ -1015,6 +1047,12 @@ function ResepScreen({ onBack, ping }) {
           <ul style={sResep.ingList}>{openRecipe.bahan.map((b, i) => <li key={i} style={sResep.ingItem}><span style={sResep.ingDot} />{b}</li>)}</ul>
           <h3 style={sResep.sectionTitle}>Cara Membuat</h3>
           <ol style={sResep.stepList}>{openRecipe.langkah.map((s, i) => <li key={i} style={sResep.stepItem}><span style={sResep.stepNum}>{i + 1}</span><span style={sResep.stepText}>{s}</span></li>)}</ol>
+          <button
+            style={{ ...sResep.menuDietBtn, ...(menuDietIds.includes(openRecipe.id) ? sResep.menuDietBtnActive : {}) }}
+            onClick={() => toggleMenuDiet(openRecipe.id, openRecipe.nama)}
+          >
+            {menuDietIds.includes(openRecipe.id) ? "✓ Ada di Menu Diet" : "+ Tambah ke Menu Diet"}
+          </button>
           <button style={sResep.jadwalBtn} onClick={() => ping(`${openRecipe.nama} ditambahkan ke Jadwal Diet ✅`)}>+ Tambah ke Jadwal Diet</button>
         </div>
       </div>
@@ -1088,7 +1126,9 @@ const sResep = {
   stepItem: { display: "flex", alignItems: "flex-start", gap: 10 },
   stepNum: { width: 22, height: 22, borderRadius: "50%", background: "#fde3e0", color: "#b5121a", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   stepText: { fontSize: 12.5, color: "#2c1810", lineHeight: 1.5, marginTop: 2 },
-  jadwalBtn: { marginTop: 22, width: "100%", background: "#b5121a", color: "#fff", border: "none", padding: 14, borderRadius: 16, fontSize: 13.5, fontWeight: 700, cursor: "pointer", boxShadow: "0 8px 18px rgba(181,18,26,.3)" },
+  jadwalBtn: { marginTop: 10, width: "100%", background: "#b5121a", color: "#fff", border: "none", padding: 14, borderRadius: 16, fontSize: 13.5, fontWeight: 700, cursor: "pointer", boxShadow: "0 8px 18px rgba(181,18,26,.3)" },
+  menuDietBtn: { marginTop: 22, width: "100%", background: "#fde3e0", color: "#b5121a", border: "1.5px solid #d81f27", padding: 13, borderRadius: 16, fontSize: 13.5, fontWeight: 700, cursor: "pointer" },
+  menuDietBtnActive: { background: "#e2f2e0", color: "#3a7d44", border: "1.5px solid #3a7d44" },
 };
 
 /* ============================================================
@@ -1358,7 +1398,7 @@ function AppShell({ auth, uid }) {
         {screen === "beranda" && <BerandaScreen onNavigate={navigate} ping={ping} />}
         {screen === "kalkulator" && <KalkulatorScreen onBack={() => navigate("beranda")} />}
         {screen === "jadwal" && <JadwalScreen onBack={() => navigate("beranda")} ping={ping} />}
-        {screen === "menu" && <MenuScreen onBack={() => navigate("beranda")} ping={ping} />}
+        {screen === "menu" && <MenuScreen onBack={() => navigate("beranda")} ping={ping} onNavigate={navigate} />}
         {screen === "belanja" && <BelanjaScreen onBack={() => navigate("beranda")} ping={ping} />}
         {screen === "artikel" && <ArtikelScreen onBack={() => navigate("beranda")} ping={ping} />}
         {screen === "resep" && <ResepScreen onBack={() => navigate("beranda")} ping={ping} />}
