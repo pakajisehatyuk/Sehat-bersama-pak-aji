@@ -273,7 +273,7 @@ const sBeranda = {
   sectionHead: { display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "18px 22px 10px" },
   sectionTitle: { fontSize: 16, fontWeight: 700, color: "#2c1810" },
   linkBtn: { fontSize: 11.5, color: "#b5121a", fontWeight: 600, background: "none", border: "none", cursor: "pointer" },
-  recipesRow: { display: "flex", gap: 12, padding: "0 22px", overflowX: "auto" },
+  recipesRow: { display: "flex", gap: 12, padding: "0 22px", overflowX: "auto", flexShrink: 0 },
   recipeCard: { minWidth: 118, flexShrink: 0 },
   thumb: { width: 118, height: 90, borderRadius: 14, backgroundSize: "cover", backgroundPosition: "center", position: "relative", marginBottom: 6 },
   bookmarkBtn: { position: "absolute", top: 6, right: 6, width: 22, height: 22, borderRadius: 6, background: "rgba(255,255,255,.9)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, cursor: "pointer" },
@@ -539,7 +539,7 @@ function JadwalScreen({ onBack, ping }) {
 
 const sJadwal = {
   addBtn: { width: 34, height: 34, borderRadius: "50%", background: "#b5121a", border: "none", fontSize: 18, color: "#fff", cursor: "pointer", fontWeight: 700, boxShadow: "0 4px 10px rgba(181,18,26,.3)" },
-  daysRow: { display: "flex", gap: 8, padding: "0 20px 12px", overflowX: "auto" },
+  daysRow: { display: "flex", gap: 8, padding: "0 20px 12px", overflowX: "auto", flexShrink: 0 },
   dayBtn: { minWidth: 42, padding: "9px 0", borderRadius: 12, border: "1px solid #f1e8dd", background: "#fff", color: "#8a7b70", fontWeight: 700, fontSize: 12.5, cursor: "pointer" },
   dayActive: { background: "#b5121a", color: "#fff", border: "1px solid #b5121a", boxShadow: "0 4px 10px rgba(181,18,26,.25)" },
   progressCard: { background: "linear-gradient(135deg, #d81f27, #7a0e13)", borderRadius: 20, padding: 18, color: "#fff", boxShadow: "0 12px 24px rgba(181,18,26,.28)" },
@@ -692,7 +692,7 @@ const sMenu = {
   suggestLabel: { fontSize: 10, fontWeight: 700, color: "#8a7b70", textTransform: "uppercase", letterSpacing: 0.3, marginTop: 4 },
   chipRow: { display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 2 },
   chip: { background: "#fdf6ee", border: "1px solid #f1e8dd", color: "#2c1810", fontSize: 11, fontWeight: 500, padding: "6px 11px", borderRadius: 20, cursor: "pointer" },
-  catRow: { display: "flex", gap: 8, padding: "0 20px 12px", overflowX: "auto" },
+  catRow: { display: "flex", gap: 8, padding: "0 20px 12px", overflowX: "auto", flexShrink: 0 },
   catBtn: { padding: "8px 14px", borderRadius: 20, border: "1px solid #f1e8dd", background: "#fff", color: "#8a7b70", fontWeight: 600, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" },
   catActive: { background: "#b5121a", color: "#fff", border: "1px solid #b5121a" },
   resultCount: { fontSize: 11, color: "#8a7b70", marginBottom: 10, fontWeight: 500 },
@@ -818,7 +818,7 @@ const sBelanja = {
   addRow: { display: "flex", gap: 8, margin: "12px 0" },
   addInput: { flex: 1, border: "1px solid #f1e8dd", borderRadius: 12, padding: "10px 14px", fontSize: 12.5, fontFamily: "'Poppins', sans-serif", background: "#fff", color: "#2c1810", outline: "none" },
   addSubmit: { width: 40, borderRadius: 12, border: "none", background: "#b5121a", color: "#fff", fontSize: 18, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 10px rgba(181,18,26,.3)" },
-  catRow: { display: "flex", gap: 8, paddingBottom: 12, overflowX: "auto" },
+  catRow: { display: "flex", gap: 8, paddingBottom: 12, overflowX: "auto", flexShrink: 0 },
   catBtn: { padding: "8px 14px", borderRadius: 20, border: "1px solid #f1e8dd", background: "#fff", color: "#8a7b70", fontWeight: 600, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" },
   catActive: { background: "#b5121a", color: "#fff", border: "1px solid #b5121a" },
   emptyState: { textAlign: "center", padding: "40px 0" },
@@ -905,7 +905,7 @@ function ArtikelScreen({ onBack, ping }) {
 }
 
 const sArtikel = {
-  catRow: { display: "flex", gap: 8, padding: "0 20px 12px", overflowX: "auto" },
+  catRow: { display: "flex", gap: 8, padding: "0 20px 12px", overflowX: "auto", flexShrink: 0 },
   catBtn: { padding: "8px 14px", borderRadius: 20, border: "1px solid #f1e8dd", background: "#fff", color: "#8a7b70", fontWeight: 600, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" },
   catActive: { background: "#b5121a", color: "#fff", border: "1px solid #b5121a" },
   tipsCard: { background: "#f2e6d6", borderRadius: 16, padding: 14, display: "flex", alignItems: "center", gap: 12, marginBottom: 16, marginTop: 4 },
@@ -1095,7 +1095,7 @@ function ResepScreen({ onBack, ping }) {
 const sResep = {
   searchWrap: { margin: "0 20px 12px", background: "#fff", borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, border: "1px solid #f1e8dd" },
   searchInput: { border: "none", outline: "none", flex: 1, fontSize: 12.5, fontFamily: "'Poppins', sans-serif", background: "transparent", color: "#2c1810" },
-  catRow: { display: "flex", gap: 8, padding: "0 20px 12px", overflowX: "auto" },
+  catRow: { display: "flex", gap: 8, padding: "0 20px 12px", overflowX: "auto", flexShrink: 0 },
   catBtn: { padding: "8px 14px", borderRadius: 20, border: "1px solid #f1e8dd", background: "#fff", color: "#8a7b70", fontWeight: 600, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" },
   catActive: { background: "#b5121a", color: "#fff", border: "1px solid #b5121a" },
   resultCount: { fontSize: 11, color: "#8a7b70", marginBottom: 10, fontWeight: 500 },
