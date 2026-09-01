@@ -929,7 +929,7 @@ const sArtikel = {
 ============================================================ */
 
 const CATEGORIES_RESEP = ["Semuanya", "Makanan", "Minuman", "Kue"];
-const DEFAULT_MENU_DIET_IDS = [4, 1, 2, 3, 5, 16, 6, 14];
+const DEFAULT_MENU_DIET_IDS = [];
 const RECIPES = [
   { id: 1, nama: "Soto Ayam Khas Madura", jenis: "Makanan", kkal: 310, waktu: "35 menit", porsi: 2, tag: "Rendah Kalori", tagColor: "red", img: "https://images.unsplash.com/photo-1547592180-85f173990554?w=400&h=280&fit=crop",
     bahan: ["300 g dada ayam, rebus & suwir", "1 liter kaldu ayam", "2 batang serai, memarkan", "3 lembar daun jeruk", "2 cm kunyit, bakar sebentar", "3 siung bawang putih", "5 butir bawang merah", "Garam & merica secukupnya", "Tauge, soun, dan seledri untuk pelengkap"],
