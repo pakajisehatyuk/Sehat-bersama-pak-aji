@@ -441,19 +441,94 @@ const sKal = {
 ============================================================ */
 
 const DAYS = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
-const DEFAULT_MEALS = [
-  { id: 1, waktu: "07:00", tipe: "Sarapan", nama: "Bubur Oat Madura + Buah Naga", kkal: 320, img: "sarapan-bubur-oat.jpg", done: true },
-  { id: 2, waktu: "10:00", tipe: "Snack Pagi", nama: "Segenggam Kacang Almond", kkal: 120, img: "https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=120&h=120&fit=crop", done: true },
-  { id: 3, waktu: "12:30", tipe: "Makan Siang", nama: "Pecel Madura Sehat + Tahu", kkal: 420, img: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=120&h=120&fit=crop", done: false },
-  { id: 4, waktu: "16:00", tipe: "Snack Sore", nama: "Jus Buah Naga Tanpa Gula", kkal: 90, img: "https://images.unsplash.com/photo-1622597467836-f3285f2131b8?w=120&h=120&fit=crop", done: false },
-  { id: 5, waktu: "19:00", tipe: "Makan Malam", nama: "Ikan Bakar Bumbu Rujak + Lalapan", kkal: 380, img: "https://images.unsplash.com/photo-1544025162-d76694265947?w=120&h=120&fit=crop", done: false },
-];
+const DEFAULT_MEALS = [];
 const TARGET_KKAL_JADWAL = 1600;
 
-function JadwalScreen({ onBack, ping }) {
+// Aturan tiap slot makan — kalori maksimal & jenis yang boleh diisi.
+// Makan malam waktunya tetap jam 17:00 (tidak bisa diubah), dan setelah itu
+// tidak ada slot makan lain lagi — hanya boleh minum air putih tawar.
+const MEAL_SLOTS = [
+  { key: "Sarapan", label: "Sarapan", defaultWaktu: "07:00", maxKkal: 350 },
+  { key: "Snack Pagi", label: "Snack Pagi", defaultWaktu: "10:00", maxKkal: 150, allowJenis: ["Kue", "Minuman"] },
+  { key: "Makan Siang", label: "Makan Siang", defaultWaktu: "12:30", maxKkal: 550 },
+  { key: "Snack Sore", label: "Snack Sore", defaultWaktu: "16:00", maxKkal: 150, allowJenis: ["Kue", "Minuman"] },
+  { key: "Makan Malam", label: "Makan Malam (17:00)", defaultWaktu: "17:00", maxKkal: 400 },
+];
+
+function validateMealForSlot(recipe, slot) {
+  if (slot.allowJenis && !slot.allowJenis.includes(recipe.jenis)) {
+    return `${slot.label} cuma boleh diisi camilan ringan atau minuman, bukan makanan berat. Coba pilih Sarapan/Makan Siang/Makan Malam.`;
+  }
+  if (slot.maxKkal && recipe.kkal > slot.maxKkal) {
+    return `Kalorinya kebesaran buat ${slot.label} (maks ${slot.maxKkal} kkal, menu ini ${recipe.kkal} kkal). Coba menu lain yang lebih ringan.`;
+  }
+  return null;
+}
+
+function JadwalPickerModal({ recipe, onClose, ping }) {
+  const [, setMeals] = usePersistentState("jadwal_meals", []);
+  const [error, setError] = useState("");
+
+  function pick(slot) {
+    const problem = validateMealForSlot(recipe, slot);
+    if (problem) { setError(problem); return; }
+    setError("");
+    const newMeal = {
+      id: Date.now(),
+      recipeId: recipe.id,
+      waktu: slot.defaultWaktu,
+      tipe: slot.label.replace(/ \(.*\)/, ""),
+      nama: recipe.nama,
+      kkal: recipe.kkal,
+      img: recipe.img,
+      done: false,
+    };
+    setMeals((prev) => [...prev, newMeal]);
+    ping(`${recipe.nama} ditambahkan ke ${slot.label.replace(/ \(.*\)/, "")} ✅`);
+    onClose();
+  }
+
+  return (
+    <div style={sPicker.overlay} onClick={onClose}>
+      <div style={sPicker.card} onClick={(e) => e.stopPropagation()}>
+        <h4 style={sPicker.title}>Masukkan ke Jadwal Diet</h4>
+        <p style={sPicker.subtitle}>{recipe.nama} · {recipe.kkal} kkal</p>
+        {error && <p style={sPicker.error}>⚠️ {error}</p>}
+        <div style={sPicker.slotList}>
+          {MEAL_SLOTS.map((slot) => (
+            <button key={slot.key} onClick={() => pick(slot)} style={sPicker.slotBtn}>
+              <span>{slot.label}</span>
+              <span style={sPicker.slotTime}>{slot.defaultWaktu}</span>
+            </button>
+          ))}
+        </div>
+        <button onClick={onClose} style={sPicker.cancelBtn}>Batal</button>
+      </div>
+    </div>
+  );
+}
+
+const sPicker = {
+  overlay: { position: "absolute", inset: 0, background: "rgba(0,0,0,.45)", display: "flex", alignItems: "flex-end", zIndex: 80 },
+  card: { background: "#fff", width: "100%", borderRadius: "22px 22px 0 0", padding: "22px 20px 28px" },
+  title: { fontSize: 15.5, fontWeight: 700, color: "#2c1810" },
+  subtitle: { fontSize: 11.5, color: "#8a7b70", marginTop: 3, marginBottom: 14 },
+  error: { fontSize: 11, color: "#d81f27", background: "#fde3e0", padding: "8px 12px", borderRadius: 10, marginBottom: 10, lineHeight: 1.5 },
+  slotList: { display: "flex", flexDirection: "column", gap: 8 },
+  slotBtn: {
+    display: "flex", justifyContent: "space-between", alignItems: "center", padding: "13px 16px",
+    borderRadius: 14, border: "1px solid #f1e8dd", background: "#fdf6ee", color: "#2c1810",
+    fontWeight: 600, fontSize: 13, cursor: "pointer",
+  },
+  slotTime: { fontSize: 11, color: "#b5121a", fontWeight: 700 },
+  cancelBtn: { marginTop: 14, width: "100%", background: "none", border: "none", color: "#8a7b70", fontWeight: 600, fontSize: 12.5, padding: 10, cursor: "pointer" },
+};
+
+function JadwalScreen({ onBack, ping, onNavigate }) {
   const [activeDay, setActiveDay] = usePersistentState("jadwal_activeDay", 2);
   const [meals, setMeals] = usePersistentState("jadwal_meals", DEFAULT_MEALS);
 
+  const sortedMeals = useMemo(() => [...meals].sort((a, b) => a.waktu.localeCompare(b.waktu)), [meals]);
   const totalKkal = useMemo(() => meals.reduce((s, m) => s + m.kkal, 0), [meals]);
   const doneKkal = useMemo(() => meals.filter((m) => m.done).reduce((s, m) => s + m.kkal, 0), [meals]);
   const sisaKkal = Math.max(0, TARGET_KKAL_JADWAL - doneKkal);
@@ -468,10 +543,15 @@ function JadwalScreen({ onBack, ping }) {
     }));
   }
 
+  function removeMeal(id, nama) {
+    setMeals((prev) => prev.filter((m) => m.id !== id));
+    ping(`${nama} dihapus dari jadwal`);
+  }
+
   return (
     <>
       <SubHeader title="Jadwal Diet" onBack={onBack} right={
-        <button style={sJadwal.addBtn} onClick={() => ping("Fitur tambah menu segera hadir 🚧")}>+</button>
+        <button style={sJadwal.addBtn} onClick={() => onNavigate && onNavigate("resep")}>+</button>
       } />
       <div style={sJadwal.daysRow}>
         {DAYS.map((d, i) => (
@@ -502,30 +582,48 @@ function JadwalScreen({ onBack, ping }) {
 
         <div style={sJadwal.sectionHead}>
           <h3 style={sJadwal.sectionTitle}>Menu Hari Ini</h3>
-          <span style={sJadwal.countPill}>{meals.filter((m) => m.done).length}/{meals.length} selesai</span>
+          {meals.length > 0 && <span style={sJadwal.countPill}>{meals.filter((m) => m.done).length}/{meals.length} selesai</span>}
         </div>
 
-        <div style={sJadwal.timeline}>
-          {meals.map((m, idx) => (
-            <div key={m.id} style={sJadwal.timelineRow}>
-              <div style={sJadwal.timeCol}>
-                <span style={sJadwal.timeText}>{m.waktu}</span>
-                <div style={sJadwal.timelineLine}>
-                  <div style={{ ...sJadwal.timelineDot, ...(m.done ? sJadwal.timelineDotDone : {}) }} />
-                  {idx < meals.length - 1 && <div style={sJadwal.timelineBar} />}
+        {sortedMeals.length === 0 ? (
+          <div style={sJadwal.emptyState}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>📅</div>
+            <p style={{ fontSize: 12.5, color: "#8a7b70", lineHeight: 1.6 }}>
+              Jadwal hari ini masih kosong.<br />Buka <b>Resep Sehat</b>, pilih menu, lalu tap <b>"+ Tambah ke Jadwal Diet"</b> dan pilih slot waktunya.
+            </p>
+            <button style={sJadwal.gotoResepBtn} onClick={() => onNavigate && onNavigate("resep")}>Buka Resep Sehat</button>
+          </div>
+        ) : (
+          <div style={sJadwal.timeline}>
+            {sortedMeals.map((m, idx) => (
+              <div key={m.id} style={sJadwal.timelineRow}>
+                <div style={sJadwal.timeCol}>
+                  <span style={sJadwal.timeText}>{m.waktu}</span>
+                  <div style={sJadwal.timelineLine}>
+                    <div style={{ ...sJadwal.timelineDot, ...(m.done ? sJadwal.timelineDotDone : {}) }} />
+                    {idx < sortedMeals.length - 1 && <div style={sJadwal.timelineBar} />}
+                  </div>
+                </div>
+                <div style={{ ...sJadwal.mealCard, ...(m.done ? sJadwal.mealCardDone : {}) }}>
+                  <img src={m.img} alt={m.nama} style={sJadwal.mealImg} />
+                  <div style={{ flex: 1 }}>
+                    <span style={sJadwal.mealTipe}>{m.tipe}</span>
+                    <h5 style={{ ...sJadwal.mealName, ...(m.done ? { textDecoration: "line-through", opacity: 0.5 } : {}) }}>{m.nama}</h5>
+                    <span style={sJadwal.mealKkal}>{m.kkal} kkal</span>
+                  </div>
+                  <button onClick={() => toggleDone(m.id)} style={{ ...sJadwal.checkBtn, ...(m.done ? sJadwal.checkBtnDone : {}) }}>{m.done ? "✓" : ""}</button>
+                  <button onClick={() => removeMeal(m.id, m.nama)} style={sJadwal.deleteBtn} aria-label="Hapus">🗑</button>
                 </div>
               </div>
-              <div style={{ ...sJadwal.mealCard, ...(m.done ? sJadwal.mealCardDone : {}) }}>
-                <img src={m.img} alt={m.nama} style={sJadwal.mealImg} />
-                <div style={{ flex: 1 }}>
-                  <span style={sJadwal.mealTipe}>{m.tipe}</span>
-                  <h5 style={{ ...sJadwal.mealName, ...(m.done ? { textDecoration: "line-through", opacity: 0.5 } : {}) }}>{m.nama}</h5>
-                  <span style={sJadwal.mealKkal}>{m.kkal} kkal</span>
-                </div>
-                <button onClick={() => toggleDone(m.id)} style={{ ...sJadwal.checkBtn, ...(m.done ? sJadwal.checkBtnDone : {}) }}>{m.done ? "✓" : ""}</button>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
+        )}
+
+        <div style={sJadwal.nightCard}>
+          <div style={{ fontSize: 22 }}>💧</div>
+          <p style={sJadwal.nightText}>
+            <b>Setelah jam 5 sore, stop makan.</b> Malam hari cukup minum air putih tawar — hindari minuman manis atau camilan lagi.
+          </p>
         </div>
 
         <div style={sJadwal.tipsCard}>
@@ -569,6 +667,11 @@ const sJadwal = {
   mealKkal: { fontSize: 10.5, color: "#8a7b70", marginTop: 2, display: "block" },
   checkBtn: { width: 26, height: 26, borderRadius: "50%", border: "1.5px solid #d8c9b8", background: "#fff", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer", flexShrink: 0 },
   checkBtnDone: { background: "#3a7d44", border: "1.5px solid #3a7d44" },
+  deleteBtn: { border: "none", background: "none", fontSize: 12, cursor: "pointer", opacity: 0.5, flexShrink: 0, marginLeft: 2 },
+  emptyState: { textAlign: "center", padding: "30px 10px" },
+  gotoResepBtn: { marginTop: 14, background: "#b5121a", color: "#fff", border: "none", padding: "11px 22px", borderRadius: 20, fontWeight: 700, fontSize: 12.5, cursor: "pointer", boxShadow: "0 6px 14px rgba(181,18,26,.25)" },
+  nightCard: { marginTop: 16, background: "#e6f0f5", borderRadius: 16, padding: 14, display: "flex", alignItems: "center", gap: 12 },
+  nightText: { fontSize: 11.5, color: "#2c1810", lineHeight: 1.55 },
   tipsCard: { marginTop: 8, marginBottom: 20, background: "#f2e6d6", borderRadius: 16, padding: 14, display: "flex", alignItems: "center", gap: 12 },
   tipsText: { fontSize: 11.5, color: "#2c1810", lineHeight: 1.5, fontWeight: 500 },
 };
@@ -592,10 +695,10 @@ function MenuScreen({ onBack, ping, onNavigate }) {
   const [category, setCategory] = useState("Semuanya");
   const [query, setQuery] = useState("");
   const [saved, setSaved] = usePersistentState("menu_saved", {});
-  const [added, setAdded] = usePersistentState("menu_added", {});
   const [recent, setRecent] = usePersistentState("menu_recent", []);
   const [searchFocused, setSearchFocused] = useState(false);
   const [menuDietIds] = usePersistentState("resep_menuDietIds", DEFAULT_MENU_DIET_IDS);
+  const [pickerRecipe, setPickerRecipe] = useState(null);
 
   const menuItems = useMemo(() => RECIPES.filter((r) => menuDietIds.includes(r.id)), [menuDietIds]);
 
@@ -613,7 +716,6 @@ function MenuScreen({ onBack, ping, onNavigate }) {
   function toggleSave(id, nama) {
     setSaved((s) => { const next = { ...s, [id]: !s[id] }; ping(next[id] ? `${nama} disimpan 🔖` : "Dihapus dari simpanan"); return next; });
   }
-  function addToJadwal(id, nama) { setAdded((a) => ({ ...a, [id]: true })); ping(`${nama} ditambahkan ke Jadwal Diet ✅`); }
 
   return (
     <>
@@ -670,14 +772,13 @@ function MenuScreen({ onBack, ping, onNavigate }) {
                 <span style={{ ...sMenu.tag, background: m.tagColor === "red" ? "#fde3e0" : "#e2f2e0", color: m.tagColor === "red" ? "#d81f27" : "#3a7d44" }}>{m.tag}</span>
                 <h5 style={sMenu.menuName}>{highlightMatch(m.nama, query)}</h5>
                 <div style={sMenu.menuMeta}><span>🔥 {m.kkal} kkal</span><span>⏱ {m.waktu}</span></div>
-                <button style={{ ...sMenu.addBtn, ...(added[m.id] ? sMenu.addBtnDone : {}) }} onClick={() => addToJadwal(m.id, m.nama)} disabled={added[m.id]}>
-                  {added[m.id] ? "✓ Ditambahkan" : "+ Tambah ke Jadwal"}
-                </button>
+                <button style={sMenu.addBtn} onClick={() => setPickerRecipe(m)}>+ Tambah ke Jadwal</button>
               </div>
             </div>
           ))
         )}
       </div>
+      {pickerRecipe && <JadwalPickerModal recipe={pickerRecipe} onClose={() => setPickerRecipe(null)} ping={ping} />}
     </>
   );
 }
@@ -1001,6 +1102,7 @@ function ResepScreen({ onBack, ping }) {
   const [saved, setSaved] = usePersistentState("resep_saved", {});
   const [servingsOverride, setServingsOverride] = usePersistentState("resep_servings", {});
   const [menuDietIds, setMenuDietIds] = usePersistentState("resep_menuDietIds", DEFAULT_MENU_DIET_IDS);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const filtered = useMemo(() => RECIPES.filter((r) => {
     const matchCat = category === "Semuanya" || r.jenis === category;
@@ -1053,7 +1155,8 @@ function ResepScreen({ onBack, ping }) {
           >
             {menuDietIds.includes(openRecipe.id) ? "✓ Ada di Menu Diet" : "+ Tambah ke Menu Diet"}
           </button>
-          <button style={sResep.jadwalBtn} onClick={() => ping(`${openRecipe.nama} ditambahkan ke Jadwal Diet ✅`)}>+ Tambah ke Jadwal Diet</button>
+          <button style={sResep.jadwalBtn} onClick={() => setPickerOpen(true)}>+ Tambah ke Jadwal Diet</button>
+          {pickerOpen && <JadwalPickerModal recipe={openRecipe} onClose={() => setPickerOpen(false)} ping={ping} />}
         </div>
       </div>
     );
@@ -1397,7 +1500,7 @@ function AppShell({ auth, uid }) {
         {screen === "onboarding" && <OnboardingScreen onFinish={finishOnboarding} />}
         {screen === "beranda" && <BerandaScreen onNavigate={navigate} ping={ping} />}
         {screen === "kalkulator" && <KalkulatorScreen onBack={() => navigate("beranda")} />}
-        {screen === "jadwal" && <JadwalScreen onBack={() => navigate("beranda")} ping={ping} />}
+        {screen === "jadwal" && <JadwalScreen onBack={() => navigate("beranda")} ping={ping} onNavigate={navigate} />}
         {screen === "menu" && <MenuScreen onBack={() => navigate("beranda")} ping={ping} onNavigate={navigate} />}
         {screen === "belanja" && <BelanjaScreen onBack={() => navigate("beranda")} ping={ping} />}
         {screen === "artikel" && <ArtikelScreen onBack={() => navigate("beranda")} ping={ping} />}
