@@ -342,9 +342,27 @@ function KalkulatorScreen({ onBack }) {
     if (bmi < 18.5) { bmiCat = "Kurus"; bmiColor = "#d89b1f"; }
     else if (bmi >= 25 && bmi < 30) { bmiCat = "Gemuk"; bmiColor = "#d89b1f"; }
     else if (bmi >= 30) { bmiCat = "Obesitas"; bmiColor = "#d81f27"; }
+
+    // Rentang berat badan ideal berdasarkan BMI sehat (18.5–24.9)
+    const hM = h / 100;
+    const idealMin = Math.round(18.5 * hM * hM);
+    const idealMax = Math.round(24.9 * hM * hM);
+    const idealMid = Math.round(22 * hM * hM);
+    const selisih = Math.round(w - idealMid);
+
+    let saran;
+    if (bmiCat === "Kurus") {
+      saran = { icon: "💪", judul: "Yuk, Naikkan Berat Badan!", pesan: `Berat badanmu masih ${Math.abs(selisih)} kg di bawah rentang ideal. Tambah porsi makan bergizi seimbang dan sumber protein, ya — pelan-pelan aja biar sehat naiknya.` };
+    } else if (bmiCat === "Gemuk" || bmiCat === "Obesitas") {
+      saran = { icon: "🏃", judul: "Yuk, Turunkan Berat Badan!", pesan: `Berat badanmu masih ${Math.abs(selisih)} kg di atas rentang ideal. Coba mulai defisit kalori bertahap dan lebih aktif bergerak — jangan buru-buru, yang penting konsisten.` };
+    } else {
+      saran = { icon: "👍", judul: "Berat Badanmu Sudah Ideal!", pesan: "Mantap, Boss! Berat badanmu udah di rentang ideal. Tinggal dijaga terus polanya biar tetap stabil ya." };
+    }
+
     return {
       bmr: Math.round(bmr), tdee: Math.round(tdee), target: Math.round(target), bmi: bmi.toFixed(1), bmiCat, bmiColor,
       protein: Math.round((target * 0.3) / 4), carb: Math.round((target * 0.4) / 4), fat: Math.round((target * 0.3) / 9),
+      idealMin, idealMax, saran,
     };
   }, [gender, age, height, weight, activity, goal]);
 
@@ -363,6 +381,19 @@ function KalkulatorScreen({ onBack }) {
         </div>
       </div>
       <div style={{ ...sKal.bmiPill, background: result.bmiColor + "22", color: result.bmiColor }}>Kategori BMI: <b>{result.bmiCat}</b></div>
+
+      <div style={sKal.idealCard}>
+        <span style={sKal.idealLabel}>Rentang Berat Badan Ideal</span>
+        <h2 style={sKal.idealNum}>{result.idealMin} - {result.idealMax} <span style={sKal.idealUnit}>kg</span></h2>
+      </div>
+
+      <div style={sKal.adviceCard}>
+        <img src="pak-aji.png" alt="Pak Aji" style={sKal.adviceAvatar} />
+        <div style={{ flex: 1 }}>
+          <h4 style={sKal.adviceTitle}>{result.saran.icon} {result.saran.judul}</h4>
+          <p style={sKal.adviceText}>{result.saran.pesan}</p>
+        </div>
+      </div>
 
       <div style={sKal.sectionHead}><h3 style={sKal.sectionTitle}>Target Makronutrien</h3></div>
       <div style={sKal.macroRow}>
@@ -415,6 +446,14 @@ const sKal = {
   resultColLabel: { fontSize: 10, opacity: 0.8 },
   resultColVal: { fontSize: 15, fontWeight: 700 },
   bmiPill: { margin: "12px 22px 0", textAlign: "center", fontSize: 12.5, fontWeight: 600, padding: "9px 14px", borderRadius: 12 },
+  idealCard: { margin: "12px 22px 0", background: "#fff", borderRadius: 16, padding: "14px 18px", textAlign: "center", border: "1px solid #f1e8dd", boxShadow: "0 4px 10px rgba(0,0,0,.04)" },
+  idealLabel: { fontSize: 11, color: "#8a7b70", fontWeight: 600 },
+  idealNum: { fontSize: 22, fontWeight: 800, color: "#2c1810", marginTop: 4 },
+  idealUnit: { fontSize: 13, fontWeight: 600, color: "#8a7b70" },
+  adviceCard: { margin: "12px 22px 0", background: "#fdf6ee", border: "1.5px solid #f2e6d6", borderRadius: 18, padding: 14, display: "flex", gap: 12, alignItems: "flex-start" },
+  adviceAvatar: { width: 46, height: 46, borderRadius: "50%", objectFit: "cover", objectPosition: "top", border: "2px solid #fff", boxShadow: "0 4px 10px rgba(0,0,0,.08)", flexShrink: 0 },
+  adviceTitle: { fontSize: 13, fontWeight: 700, color: "#2c1810" },
+  adviceText: { fontSize: 11.5, color: "#6b5f52", lineHeight: 1.55, marginTop: 4 },
   sectionHead: { padding: "18px 22px 10px" },
   sectionTitle: { fontSize: 15.5, fontWeight: 700, color: "#2c1810" },
   macroRow: { display: "flex", gap: 10, padding: "0 22px" },
