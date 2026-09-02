@@ -1436,7 +1436,11 @@ const MENU_ITEMS_PROFIL = [
   { icon: "ℹ️", label: "Tentang Aplikasi" },
 ];
 
-function ProfilScreen({ onBack, ping, auth, uid }) {
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function ProfilScreen({ onBack, ping, auth, uid, onNavigate }) {
   const resetAll = usePersistReset();
   const [nama, setNama] = usePersistentState("profil_nama", auth?.user?.displayName || "Sahabat Sehat");
   const [editing, setEditing] = useState(false);
@@ -1444,13 +1448,24 @@ function ProfilScreen({ onBack, ping, auth, uid }) {
   const [beratAwal] = usePersistentState("profil_beratAwal", 78);
   const [beratSekarang, setBeratSekarang] = usePersistentState("profil_beratSekarang", 72);
   const [targetBerat] = usePersistentState("profil_targetBerat", 65);
+  const [beratHistory, setBeratHistory] = usePersistentState("profil_beratHistory", [{ date: todayStr(), berat: 72 }]);
   const [streak] = useState(12);
   const [premium, setPremium] = usePersistentState("profil_premium", false);
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
 
   function saveNama() { setNama(tempNama.trim() || nama); setEditing(false); ping("Nama berhasil diperbarui ✅"); }
-  function adjustBerat(delta) { setBeratSekarang((b) => Math.max(30, Math.min(200, b + delta))); }
+  function adjustBerat(delta) {
+    const next = Math.max(30, Math.min(200, Math.round((beratSekarang + delta) * 10) / 10));
+    setBeratSekarang(next);
+    const today = todayStr();
+    setBeratHistory((prev) => {
+      const exists = prev.some((h) => h.date === today);
+      return exists
+        ? prev.map((h) => (h.date === today ? { ...h, berat: next } : h))
+        : [...prev, { date: today, berat: next }];
+    });
+  }
   const progress = Math.min(100, Math.max(0, ((beratAwal - beratSekarang) / (beratAwal - targetBerat)) * 100));
 
   return (
@@ -1517,7 +1532,11 @@ function ProfilScreen({ onBack, ping, auth, uid }) {
 
         <div style={sProfil.menuList}>
           {MENU_ITEMS_PROFIL.map((m) => (
-            <button key={m.label} style={sProfil.menuRow} onClick={() => ping(`Membuka ${m.label}...`)}>
+            <button
+              key={m.label}
+              style={sProfil.menuRow}
+              onClick={() => (m.label === "Riwayat Berat Badan" && onNavigate ? onNavigate("riwayat") : ping(`Membuka ${m.label}...`))}
+            >
               <span style={sProfil.menuIcon}>{m.icon}</span>
               <span style={sProfil.menuLabel}>{m.label}</span>
               <span style={sProfil.menuArrow}>›</span>
@@ -1638,6 +1657,109 @@ const sProfil = {
 };
 
 /* ============================================================
+   RIWAYAT BERAT BADAN
+============================================================ */
+
+function formatTanggal(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+}
+
+function RiwayatBeratScreen({ onBack }) {
+  const [beratHistory] = usePersistentState("profil_beratHistory", [{ date: todayStr(), berat: 72 }]);
+  const [targetBerat] = usePersistentState("profil_targetBerat", 65);
+
+  const sorted = useMemo(() => [...beratHistory].sort((a, b) => a.date.localeCompare(b.date)), [beratHistory]);
+  const beratValues = sorted.map((h) => h.berat);
+  const minBerat = Math.min(...beratValues, targetBerat) - 2;
+  const maxBerat = Math.max(...beratValues) + 2;
+  const range = maxBerat - minBerat || 1;
+
+  const chartW = 320, chartH = 160, padX = 10, padY = 14;
+  const points = sorted.map((h, i) => {
+    const x = sorted.length > 1 ? padX + (i / (sorted.length - 1)) * (chartW - padX * 2) : chartW / 2;
+    const y = padY + (1 - (h.berat - minBerat) / range) * (chartH - padY * 2);
+    return { x, y, ...h };
+  });
+  const pathD = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+  const targetY = padY + (1 - (targetBerat - minBerat) / range) * (chartH - padY * 2);
+
+  const first = sorted[0]?.berat ?? 0;
+  const last = sorted[sorted.length - 1]?.berat ?? 0;
+  const totalChange = last - first;
+
+  return (
+    <>
+      <SubHeader title="Riwayat Berat Badan" onBack={onBack} />
+      <div style={{ padding: "0 22px 30px" }}>
+        <div style={sRiwayat.summaryRow}>
+          <div style={sRiwayat.summaryCard}>
+            <span style={sRiwayat.summaryLabel}>Awal Tercatat</span>
+            <b style={sRiwayat.summaryVal}>{first} kg</b>
+          </div>
+          <div style={sRiwayat.summaryCard}>
+            <span style={sRiwayat.summaryLabel}>Terbaru</span>
+            <b style={{ ...sRiwayat.summaryVal, color: "#b5121a" }}>{last} kg</b>
+          </div>
+          <div style={sRiwayat.summaryCard}>
+            <span style={sRiwayat.summaryLabel}>Perubahan</span>
+            <b style={{ ...sRiwayat.summaryVal, color: totalChange <= 0 ? "#3a7d44" : "#d89b1f" }}>
+              {totalChange > 0 ? "+" : ""}{totalChange.toFixed(1)} kg
+            </b>
+          </div>
+        </div>
+
+        <div style={sRiwayat.chartCard}>
+          <div style={sRiwayat.chartHead}>
+            <h3 style={sRiwayat.chartTitle}>Grafik Progres</h3>
+            <span style={sRiwayat.chartLegend}>┄ Target: {targetBerat} kg</span>
+          </div>
+          {sorted.length < 2 ? (
+            <p style={sRiwayat.emptyChartText}>Catatan masih sedikit. Ubah berat badan di Profil (tombol +/−) beberapa kali untuk mulai lihat grafiknya di sini.</p>
+          ) : (
+            <svg viewBox={`0 0 ${chartW} ${chartH}`} width="100%" height={chartH}>
+              <line x1={padX} y1={targetY} x2={chartW - padX} y2={targetY} stroke="#3a7d44" strokeWidth="1.5" strokeDasharray="4 4" />
+              <path d={pathD} fill="none" stroke="#b5121a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              {points.map((p, i) => (
+                <circle key={i} cx={p.x} cy={p.y} r="3.5" fill="#fff" stroke="#b5121a" strokeWidth="2" />
+              ))}
+            </svg>
+          )}
+        </div>
+
+        <div style={sRiwayat.sectionHead}><h3 style={sRiwayat.sectionTitle}>Catatan Berat Badan</h3></div>
+        <div style={sRiwayat.historyList}>
+          {[...sorted].reverse().map((h, i) => (
+            <div key={h.date} style={sRiwayat.historyRow}>
+              <span style={sRiwayat.historyDate}>{formatTanggal(h.date)}</span>
+              <b style={sRiwayat.historyBerat}>{h.berat} kg</b>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+const sRiwayat = {
+  summaryRow: { display: "flex", gap: 8, marginTop: 8 },
+  summaryCard: { flex: 1, background: "#fff", borderRadius: 14, padding: "12px 8px", textAlign: "center", border: "1px solid #f1e8dd", boxShadow: "0 4px 10px rgba(0,0,0,.04)" },
+  summaryLabel: { fontSize: 9.5, color: "#8a7b70", display: "block", marginBottom: 4 },
+  summaryVal: { fontSize: 14, color: "#2c1810" },
+  chartCard: { marginTop: 16, background: "#fff", borderRadius: 18, padding: 16, border: "1px solid #f1e8dd", boxShadow: "0 4px 10px rgba(0,0,0,.04)" },
+  chartHead: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
+  chartTitle: { fontSize: 13.5, fontWeight: 700, color: "#2c1810" },
+  chartLegend: { fontSize: 10, color: "#3a7d44", fontWeight: 600 },
+  emptyChartText: { fontSize: 11.5, color: "#8a7b70", lineHeight: 1.6, padding: "20px 0" },
+  sectionHead: { padding: "18px 0 10px" },
+  sectionTitle: { fontSize: 14.5, fontWeight: 700, color: "#2c1810" },
+  historyList: { background: "#fff", borderRadius: 16, border: "1px solid #f1e8dd", boxShadow: "0 4px 10px rgba(0,0,0,.04)", overflow: "hidden" },
+  historyRow: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderBottom: "1px solid #f7f2ea" },
+  historyDate: { fontSize: 12, color: "#8a7b70", fontWeight: 500 },
+  historyBerat: { fontSize: 13, color: "#2c1810" },
+};
+
+/* ============================================================
    MAIN APP — routing + shell
 ============================================================ */
 
@@ -1694,7 +1816,8 @@ function AppShell({ auth, uid }) {
         {screen === "belanja" && <BelanjaScreen onBack={() => navigate("beranda")} ping={ping} />}
         {screen === "artikel" && <ArtikelScreen onBack={() => navigate("beranda")} ping={ping} />}
         {screen === "resep" && <ResepScreen onBack={() => navigate("beranda")} ping={ping} />}
-        {screen === "profil" && <ProfilScreen onBack={() => navigate("beranda")} ping={ping} auth={auth} uid={uid} />}
+        {screen === "profil" && <ProfilScreen onBack={() => navigate("beranda")} ping={ping} auth={auth} uid={uid} onNavigate={navigate} />}
+        {screen === "riwayat" && <RiwayatBeratScreen onBack={() => navigate("profil")} />}
       </div>
 
       {showBottomNav && <BottomNav active={screen} onNavigate={navigate} />}
