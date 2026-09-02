@@ -468,6 +468,8 @@ function validateMealForSlot(recipe, slot) {
 function JadwalPickerModal({ recipe, onClose, ping }) {
   const [, setMealsByDay] = usePersistentState("jadwal_meals", {});
   const [activeDay] = usePersistentState("jadwal_activeDay", 2);
+  const [cheatDays] = usePersistentState("jadwal_cheatDays", [0]);
+  const isCheatDay = cheatDays.includes(activeDay);
   const [error, setError] = useState("");
   const [step, setStep] = useState("slot"); // "slot" | "sambal"
   const [chosenSlot, setChosenSlot] = useState(null);
@@ -494,7 +496,7 @@ function JadwalPickerModal({ recipe, onClose, ping }) {
   }
 
   function pick(slot) {
-    const problem = validateMealForSlot(recipe, slot);
+    const problem = isCheatDay ? null : validateMealForSlot(recipe, slot);
     if (problem) { setError(problem); return; }
     setError("");
     if (offersSambal && sambalOptions.length > 0) {
@@ -532,6 +534,7 @@ function JadwalPickerModal({ recipe, onClose, ping }) {
       <div style={sPicker.card} onClick={(e) => e.stopPropagation()}>
         <h4 style={sPicker.title}>Masukkan ke Jadwal Diet</h4>
         <p style={sPicker.subtitle}>{recipe.nama} · {recipe.kkal} kkal</p>
+        {isCheatDay && <p style={sPicker.cheatHint}>🎉 Cheat Day — batas kalori & jenis menu dimatiin sementara</p>}
         {error && <p style={sPicker.error}>⚠️ {error}</p>}
         <div style={sPicker.slotList}>
           {MEAL_SLOTS.map((slot) => (
@@ -553,6 +556,7 @@ const sPicker = {
   title: { fontSize: 15.5, fontWeight: 700, color: "#2c1810" },
   subtitle: { fontSize: 11.5, color: "#8a7b70", marginTop: 3, marginBottom: 14 },
   error: { fontSize: 11, color: "#d81f27", background: "#fde3e0", padding: "8px 12px", borderRadius: 10, marginBottom: 10, lineHeight: 1.5 },
+  cheatHint: { fontSize: 10.5, color: "#8a5a1f", background: "#fff3d6", padding: "6px 12px", borderRadius: 10, marginBottom: 10, fontWeight: 600 },
   slotList: { display: "flex", flexDirection: "column", gap: 8 },
   slotBtn: {
     display: "flex", justifyContent: "space-between", alignItems: "center", padding: "13px 16px",
@@ -572,13 +576,39 @@ const sPicker = {
 function JadwalScreen({ onBack, ping, onNavigate }) {
   const [activeDay, setActiveDay] = usePersistentState("jadwal_activeDay", 2);
   const [mealsByDay, setMealsByDay] = usePersistentState("jadwal_meals", {});
+  const [cheatDays, setCheatDays] = usePersistentState("jadwal_cheatDays", [0]);
+  const [confirmCheatDay, setConfirmCheatDay] = useState(null);
   const meals = mealsByDay[activeDay] || [];
+  const isCheatDay = cheatDays.includes(activeDay);
 
   function setMeals(updater) {
     setMealsByDay((prev) => ({
       ...prev,
       [activeDay]: typeof updater === "function" ? updater(prev[activeDay] || []) : updater,
     }));
+  }
+
+  function toggleCheatDay(dayIndex) {
+    const isOn = cheatDays.includes(dayIndex);
+    if (isOn) {
+      if (cheatDays.length <= 1) {
+        ping("Minimal harus ada 1 Cheat Day dalam seminggu ya, biar hormon tetap seimbang 😊");
+        return;
+      }
+      setCheatDays((prev) => prev.filter((d) => d !== dayIndex));
+      ping(`${DAYS[dayIndex]} bukan Cheat Day lagi`);
+    } else if (cheatDays.length + 1 === 2) {
+      setConfirmCheatDay(dayIndex);
+    } else {
+      setCheatDays((prev) => [...prev, dayIndex]);
+      ping(`${DAYS[dayIndex]} jadi Cheat Day 🎉`);
+    }
+  }
+
+  function confirmTwoCheatDays() {
+    setCheatDays((prev) => [...prev, confirmCheatDay]);
+    ping(`${DAYS[confirmCheatDay]} jadi Cheat Day 🎉`);
+    setConfirmCheatDay(null);
   }
 
   const sortedMeals = useMemo(() => [...meals].sort((a, b) => a.waktu.localeCompare(b.waktu)), [meals]);
@@ -608,11 +638,35 @@ function JadwalScreen({ onBack, ping, onNavigate }) {
       } />
       <div style={sJadwal.daysRow}>
         {DAYS.map((d, i) => (
-          <button key={d} onClick={() => setActiveDay(i)} style={{ ...sJadwal.dayBtn, ...(i === activeDay ? sJadwal.dayActive : {}) }}>{d}</button>
+          <button key={d} onClick={() => setActiveDay(i)} style={{ ...sJadwal.dayBtn, ...(i === activeDay ? sJadwal.dayActive : {}) }}>
+            {d}{cheatDays.includes(i) && <span style={sJadwal.cheatBadge}>🎉</span>}
+          </button>
+        ))}
+      </div>
+
+      <div style={sJadwal.cheatRow}>
+        <span style={sJadwal.cheatLabel}>Cheat Day:</span>
+        {DAYS.map((d, i) => (
+          <button
+            key={d}
+            onClick={() => toggleCheatDay(i)}
+            style={{ ...sJadwal.cheatChip, ...(cheatDays.includes(i) ? sJadwal.cheatChipActive : {}) }}
+          >
+            {d}
+          </button>
         ))}
       </div>
 
       <div style={{ padding: "0 22px" }}>
+        {isCheatDay ? (
+          <div style={sJadwal.cheatBanner}>
+            <div style={{ fontSize: 26 }}>🎉</div>
+            <div>
+              <h3 style={sJadwal.cheatBannerTitle}>Cheat Day Aktif!</h3>
+              <p style={sJadwal.cheatBannerText}>Hari ini bebas makan apa saja, Boss — batas kalori & aturan slot dimatikan sementara. Tetap nikmati dengan sadar, jangan berlebihan ya 😊</p>
+            </div>
+          </div>
+        ) : (
         <div style={sJadwal.progressCard}>
           <div style={sJadwal.progressTop}>
             <div>
@@ -632,6 +686,7 @@ function JadwalScreen({ onBack, ping, onNavigate }) {
             <span>Total Menu: <b>{totalKkal.toLocaleString("id-ID")} kkal</b></span>
           </div>
         </div>
+        )}
 
         <div style={sJadwal.sectionHead}>
           <h3 style={sJadwal.sectionTitle}>Menu Hari Ini</h3>
@@ -684,6 +739,22 @@ function JadwalScreen({ onBack, ping, onNavigate }) {
           <p style={sJadwal.tipsText}>Coret menu setelah dimakan biar Pak Aji bisa pantau progres kalorimu hari ini.</p>
         </div>
       </div>
+
+      {confirmCheatDay !== null && (
+        <div style={sJadwal.modalOverlay}>
+          <div style={sJadwal.modalCard}>
+            <img src="pak-aji.png" alt="Pak Aji" style={sJadwal.modalAvatar} />
+            <h4 style={sJadwal.modalTitle}>Yakin pilih Cheat Day 2 hari?</h4>
+            <p style={sJadwal.modalDesc}>
+              Boleh kok, apalagi kalau ini masih awal-awal diet. Tapi inget ya — walau bebas makan apa saja, jangan sampai berlebihan. Nanti malah GAGAL DIET-nya! 😅
+            </p>
+            <div style={sJadwal.modalActions}>
+              <button style={sJadwal.modalCancel} onClick={() => setConfirmCheatDay(null)}>Batal</button>
+              <button style={sJadwal.modalConfirm} onClick={confirmTwoCheatDays}>Ya, 2 Hari</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -691,6 +762,22 @@ function JadwalScreen({ onBack, ping, onNavigate }) {
 const sJadwal = {
   addBtn: { width: 34, height: 34, borderRadius: "50%", background: "#b5121a", border: "none", fontSize: 18, color: "#fff", cursor: "pointer", fontWeight: 700, boxShadow: "0 4px 10px rgba(181,18,26,.3)" },
   daysRow: { display: "flex", gap: 8, padding: "0 20px 12px", overflowX: "auto", flexShrink: 0 },
+  cheatBadge: { fontSize: 9, marginLeft: 3 },
+  cheatRow: { display: "flex", gap: 6, padding: "0 20px 14px", overflowX: "auto", flexShrink: 0, alignItems: "center" },
+  cheatLabel: { fontSize: 10.5, color: "#8a7b70", fontWeight: 700, marginRight: 2, whiteSpace: "nowrap" },
+  cheatChip: { minWidth: 36, padding: "6px 0", borderRadius: 10, border: "1px solid #f1e8dd", background: "#fff", color: "#b3a795", fontWeight: 700, fontSize: 10.5, cursor: "pointer" },
+  cheatChipActive: { background: "linear-gradient(120deg,#f5a623,#e0392b)", color: "#fff", border: "1px solid #e0392b" },
+  cheatBanner: { background: "linear-gradient(120deg,#fff3d6,#fde3e0)", borderRadius: 20, padding: 16, display: "flex", gap: 12, alignItems: "flex-start", border: "1px solid #f5d99a" },
+  cheatBannerTitle: { fontSize: 14.5, fontWeight: 800, color: "#8a5a1f" },
+  cheatBannerText: { fontSize: 11.5, color: "#6b5335", lineHeight: 1.55, marginTop: 4 },
+  modalOverlay: { position: "absolute", inset: 0, background: "rgba(0,0,0,.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 80, padding: 30 },
+  modalCard: { background: "#fff", borderRadius: 20, padding: "22px 20px", textAlign: "center", width: "100%", boxShadow: "0 20px 40px rgba(0,0,0,.2)" },
+  modalAvatar: { width: 56, height: 56, borderRadius: "50%", objectFit: "cover", objectPosition: "top", margin: "0 auto 10px", display: "block", border: "3px solid #fde3e0" },
+  modalTitle: { fontSize: 15, fontWeight: 700, color: "#2c1810" },
+  modalDesc: { fontSize: 11.5, color: "#6b5f52", marginTop: 8, lineHeight: 1.6 },
+  modalActions: { display: "flex", gap: 10, marginTop: 18 },
+  modalCancel: { flex: 1, padding: 11, borderRadius: 12, border: "1px solid #f1e8dd", background: "#fdf6ee", color: "#2c1810", fontWeight: 700, fontSize: 12.5, cursor: "pointer" },
+  modalConfirm: { flex: 1, padding: 11, borderRadius: 12, border: "none", background: "#e0392b", color: "#fff", fontWeight: 700, fontSize: 12.5, cursor: "pointer" },
   dayBtn: { minWidth: 42, padding: "9px 0", borderRadius: 12, border: "1px solid #f1e8dd", background: "#fff", color: "#8a7b70", fontWeight: 700, fontSize: 12.5, cursor: "pointer" },
   dayActive: { background: "#b5121a", color: "#fff", border: "1px solid #b5121a", boxShadow: "0 4px 10px rgba(181,18,26,.25)" },
   progressCard: { background: "linear-gradient(135deg, #d81f27, #7a0e13)", borderRadius: 20, padding: 18, color: "#fff", boxShadow: "0 12px 24px rgba(181,18,26,.28)" },
