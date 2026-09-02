@@ -99,7 +99,7 @@ function OnboardingScreen({ onFinish }) {
       <svg style={{ ...sOnboard.leaf, top: 210, left: 20, width: 22 }} viewBox="0 0 24 24" fill="#d81f27"><circle cx="12" cy="13" r="9" /></svg>
       <svg style={{ ...sOnboard.leaf, top: 400, right: 6, width: 24 }} viewBox="0 0 24 24" fill="#d81f27"><circle cx="12" cy="13" r="9" /></svg>
 
-      <div style={{ padding: "10px 30px 0", zIndex: 5 }}>
+      <div style={{ padding: "10px 30px 0", position: "relative", zIndex: 5 }}>
         <div style={sOnboard.script}>Sehat Bersama</div>
         <div style={sOnboard.bold}>Pak Aji</div>
         <div style={sOnboard.pillBtn}>Masakan Sehat, Hidup Hebat</div>
@@ -466,26 +466,65 @@ function validateMealForSlot(recipe, slot) {
 }
 
 function JadwalPickerModal({ recipe, onClose, ping }) {
-  const [, setMeals] = usePersistentState("jadwal_meals", []);
+  const [, setMealsByDay] = usePersistentState("jadwal_meals", {});
+  const [activeDay] = usePersistentState("jadwal_activeDay", 2);
   const [error, setError] = useState("");
+  const [step, setStep] = useState("slot"); // "slot" | "sambal"
+  const [chosenSlot, setChosenSlot] = useState(null);
 
-  function pick(slot) {
-    const problem = validateMealForSlot(recipe, slot);
-    if (problem) { setError(problem); return; }
-    setError("");
+  const sambalOptions = useMemo(() => RECIPES.filter((r) => r.isSambal), []);
+  const offersSambal = recipe.jenis === "Makanan" && !recipe.isSambal;
+
+  function finalizeMeal(slot, sambal) {
+    const namaFinal = sambal ? `${recipe.nama} + ${sambal.nama}` : recipe.nama;
+    const kkalFinal = sambal ? recipe.kkal + sambal.kkal : recipe.kkal;
     const newMeal = {
       id: Date.now(),
       recipeId: recipe.id,
       waktu: slot.defaultWaktu,
       tipe: slot.label.replace(/ \(.*\)/, ""),
-      nama: recipe.nama,
-      kkal: recipe.kkal,
+      nama: namaFinal,
+      kkal: kkalFinal,
       img: recipe.img,
       done: false,
     };
-    setMeals((prev) => [...prev, newMeal]);
-    ping(`${recipe.nama} ditambahkan ke ${slot.label.replace(/ \(.*\)/, "")} ✅`);
+    setMealsByDay((prev) => ({ ...prev, [activeDay]: [...(prev[activeDay] || []), newMeal] }));
+    ping(`${namaFinal} ditambahkan ke ${slot.label.replace(/ \(.*\)/, "")} ✅`);
     onClose();
+  }
+
+  function pick(slot) {
+    const problem = validateMealForSlot(recipe, slot);
+    if (problem) { setError(problem); return; }
+    setError("");
+    if (offersSambal && sambalOptions.length > 0) {
+      setChosenSlot(slot);
+      setStep("sambal");
+    } else {
+      finalizeMeal(slot, null);
+    }
+  }
+
+  if (step === "sambal") {
+    return (
+      <div style={sPicker.overlay} onClick={onClose}>
+        <div style={sPicker.card} onClick={(e) => e.stopPropagation()}>
+          <h4 style={sPicker.title}>Mau ditambah sambal? 🌶️</h4>
+          <p style={sPicker.subtitle}>Pendamping opsional buat {recipe.nama} — boleh dilewati.</p>
+          <div style={sPicker.sambalGrid}>
+            {sambalOptions.map((s) => (
+              <button key={s.id} style={sPicker.sambalCard} onClick={() => finalizeMeal(chosenSlot, s)}>
+                <div style={{ ...sPicker.sambalThumb, backgroundImage: `url(${s.img})` }} />
+                <span style={sPicker.sambalName}>{s.nama}</span>
+                <span style={sPicker.sambalKkal}>+{s.kkal} kkal</span>
+              </button>
+            ))}
+          </div>
+          <button onClick={() => finalizeMeal(chosenSlot, null)} style={sPicker.skipBtn}>Tanpa Sambal, Lanjutkan</button>
+          <button onClick={onClose} style={sPicker.cancelBtn}>Batal</button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -522,11 +561,25 @@ const sPicker = {
   },
   slotTime: { fontSize: 11, color: "#b5121a", fontWeight: 700 },
   cancelBtn: { marginTop: 14, width: "100%", background: "none", border: "none", color: "#8a7b70", fontWeight: 600, fontSize: 12.5, padding: 10, cursor: "pointer" },
+  sambalGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, maxHeight: 280, overflowY: "auto" },
+  sambalCard: { background: "#fdf6ee", border: "1px solid #f1e8dd", borderRadius: 14, padding: 8, cursor: "pointer", textAlign: "left" },
+  sambalThumb: { width: "100%", height: 60, borderRadius: 10, backgroundSize: "cover", backgroundPosition: "center", marginBottom: 6 },
+  sambalName: { fontSize: 11, fontWeight: 700, color: "#2c1810", display: "block", lineHeight: 1.3 },
+  sambalKkal: { fontSize: 10, color: "#b5121a", fontWeight: 600 },
+  skipBtn: { marginTop: 14, width: "100%", background: "#fde3e0", color: "#b5121a", border: "none", padding: 12, borderRadius: 14, fontWeight: 700, fontSize: 12.5, cursor: "pointer" },
 };
 
 function JadwalScreen({ onBack, ping, onNavigate }) {
   const [activeDay, setActiveDay] = usePersistentState("jadwal_activeDay", 2);
-  const [meals, setMeals] = usePersistentState("jadwal_meals", DEFAULT_MEALS);
+  const [mealsByDay, setMealsByDay] = usePersistentState("jadwal_meals", {});
+  const meals = mealsByDay[activeDay] || [];
+
+  function setMeals(updater) {
+    setMealsByDay((prev) => ({
+      ...prev,
+      [activeDay]: typeof updater === "function" ? updater(prev[activeDay] || []) : updater,
+    }));
+  }
 
   const sortedMeals = useMemo(() => [...meals].sort((a, b) => a.waktu.localeCompare(b.waktu)), [meals]);
   const totalKkal = useMemo(() => meals.reduce((s, m) => s + m.kkal, 0), [meals]);
@@ -1053,25 +1106,25 @@ const RECIPES = [
   { id: 14, nama: "Salad Ayam Panggang", jenis: "Makanan", kkal: 340, waktu: "25 menit", porsi: 2, tag: "Tinggi Protein", tagColor: "red", img: "salad-sayur.jpg",
     bahan: ["200 g dada ayam fillet, potong dadu", "1 sdt bumbu panggang (garam, lada, bawang putih bubuk, paprika bubuk)", "1 sdt minyak zaitun untuk memanggang", "3-4 lembar selada, sobek-sobek", "1/4 kol ungu, iris tipis", "1 buah wortel, serut atau iris korek api", "1/2 buah timun, potong dadu", "2 butir telur rebus, belah dua", "100 g jagung manis pipil (bisa rebus atau kalengan rendah gula)", "Saus creamy/yoghurt untuk cocolan secukupnya"],
     langkah: ["Lumuri potongan dada ayam dengan bumbu panggang dan sedikit minyak zaitun, diamkan 10 menit.", "Panggang ayam di teflon atau oven sampai matang dan sedikit kecokelatan di luar.", "Rebus telur hingga matang, kupas dan belah dua.", "Tata selada, kol ungu, wortel, dan timun dalam kotak/mangkuk saji.", "Susun ayam panggang, telur rebus, dan jagung manis di atas sayuran.", "Sajikan dengan saus creamy/yoghurt terpisah sebagai cocolan agar sayuran tetap renyah."] },
-  { id: 7, nama: "Sambal Kecap", jenis: "Makanan", kkal: 90, waktu: "10 menit", porsi: 4, tag: "Cocolan Pedas", tagColor: "red", img: "sambal/sambal-kecap.jpg",
+  { id: 7, nama: "Sambal Kecap", jenis: "Makanan", isSambal: true, kkal: 90, waktu: "10 menit", porsi: 4, tag: "Cocolan Pedas", tagColor: "red", img: "sambal/sambal-kecap.jpg",
     bahan: ["5 sdm kecap manis", "5-7 buah cabai rawit, iris tipis (sesuai selera)", "2 siung bawang merah, iris tipis", "1 siung bawang putih, iris halus (opsional)", "1 buah tomat kecil, potong dadu", "1 sdt air jeruk limau atau jeruk nipis", "Sejumput garam (opsional)"],
     langkah: ["Siapkan mangkuk kecil, masukkan kecap manis sebagai bahan utama.", "Tambahkan cabai rawit, bawang merah, dan bawang putih.", "Masukkan potongan tomat.", "Beri perasan jeruk limau agar lebih segar.", "Aduk rata, koreksi rasa, sambal kecap siap disajikan."] },
-  { id: 8, nama: "Sambal Rampai Pedas Asem Seger", jenis: "Makanan", kkal: 25, waktu: "15 menit", porsi: 3, tag: "Segar & Asam", tagColor: "green", img: "sambal/sambal-rampai.jpg",
+  { id: 8, nama: "Sambal Rampai Pedas Asem Seger", jenis: "Makanan", isSambal: true, kkal: 25, waktu: "15 menit", porsi: 3, tag: "Segar & Asam", tagColor: "green", img: "sambal/sambal-rampai.jpg",
     bahan: ["20 buah cabai rawit merah kecil", "1 sdt terasi bakar", "6-8 buah tomat rampai", "Garam, gula, micin secukupnya", "Perasan jeruk nipis secukupnya"],
     langkah: ["Ulek cabai mentah, lalu tambahkan terasi, garam, gula, dan micin, ulek kasar.", "Tambahkan tomat rampai 6-8 buah, ulek kasar saja.", "Kalau mau lebih asam dan becek, tambahkan lagi tomat rampai, cicipi sampai sesuai selera.", "Tambahkan perasan jeruk nipis untuk rasa yang lebih segar."] },
-  { id: 9, nama: "Sambal Matah Segar Pedas", jenis: "Makanan", kkal: 110, waktu: "20 menit", porsi: 4, tag: "Pedas Wangi", tagColor: "red", img: "sambal/sambal-matah.jpg",
+  { id: 9, nama: "Sambal Matah Segar Pedas", jenis: "Makanan", isSambal: true, kkal: 110, waktu: "20 menit", porsi: 4, tag: "Pedas Wangi", tagColor: "red", img: "sambal/sambal-matah.jpg",
     bahan: ["10 butir bawang merah, iris tipis", "5 siung bawang putih, iris tipis", "10 buah cabai rawit merah (sesuai selera pedas)", "3 batang serai, ambil bagian putih, iris halus", "5 lembar daun jeruk, buang tulang daun, iris tipis", "1/2 sdt garam", "1/2 sdt gula pasir", "1 buah jeruk limau", "100 ml minyak goreng panas"],
     langkah: ["Iris tipis bawang merah, bawang putih, serai, cabai, dan daun jeruk.", "Campur semua bahan iris ke dalam wadah, tambahkan garam, gula, dan air jeruk limau.", "Panaskan minyak goreng hingga benar-benar panas, tuang sedikit demi sedikit ke campuran bahan — ini yang bikin aroma khasnya keluar.", "Aduk rata semua bahan, koreksi rasa. Tambah irisan cabai kalau ingin lebih pedas.", "Sambal matah siap disajikan bersama nasi hangat, ayam goreng, ikan bakar, atau tempe goreng."] },
-  { id: 10, nama: "Sambal Ijo Padang", jenis: "Makanan", kkal: 40, waktu: "25 menit", porsi: 4, tag: "Khas Padang", tagColor: "green", img: "sambal/sambal-ijo.jpg",
+  { id: 10, nama: "Sambal Ijo Padang", jenis: "Makanan", isSambal: true, kkal: 40, waktu: "25 menit", porsi: 4, tag: "Khas Padang", tagColor: "green", img: "sambal/sambal-ijo.jpg",
     bahan: ["15 buah cabai keriting hijau", "15 buah cabai rawit hijau", "3 siung bawang merah", "2 siung bawang putih", "1 buah tomat hijau ukuran sedang", "2 lembar daun salam", "3 lembar daun jeruk", "1 batang serai"],
     langkah: ["Bersihkan semua bahan.", "Didihkan air, rebus sebentar cabai, bawang, dan tomat, angkat lalu ulek kasar.", "Tumis bahan yang sudah diulek, tambahkan daun jeruk, daun salam, dan serai.", "Bumbui dengan garam dan penyedap, koreksi rasa.", "Angkat dan siap dihidangkan."] },
-  { id: 11, nama: "Sambal Bawang", jenis: "Makanan", kkal: 60, waktu: "20 menit", porsi: 5, tag: "Awet & Tahan Lama", tagColor: "red", img: "sambal/sambal-bawang.jpg",
+  { id: 11, nama: "Sambal Bawang", jenis: "Makanan", isSambal: true, kkal: 60, waktu: "20 menit", porsi: 5, tag: "Awet & Tahan Lama", tagColor: "red", img: "sambal/sambal-bawang.jpg",
     bahan: ["100 g bawang merah", "100 g bawang putih", "250 g cabai rawit merah (sesuaikan selera)", "1 sdt garam", "1/2 sdt kaldu jamur", "1 sdm gula"],
     langkah: ["Kukus semua cabai dan bawang sampai empuk.", "Ulek kasar sampai pecah saja.", "Tambahkan garam, gula, dan kaldu bubuk.", "Tumis di minyak panas untuk sambal yang awet dan tahan lama — atau cukup siram minyak panas saja kalau untuk sekali makan (tanpa ditumis)."] },
-  { id: 12, nama: "Sambal Terasi", jenis: "Makanan", kkal: 50, waktu: "25 menit", porsi: 5, tag: "Klasik Gurih", tagColor: "green", img: "sambal/sambal-terasi.jpg",
+  { id: 12, nama: "Sambal Terasi", jenis: "Makanan", isSambal: true, kkal: 50, waktu: "25 menit", porsi: 5, tag: "Klasik Gurih", tagColor: "green", img: "sambal/sambal-terasi.jpg",
     bahan: ["20 buah cabai merah keriting", "20 buah cabai rawit", "6 siung bawang merah", "4 siung bawang putih", "1 buah terasi, digoreng", "6 buah tomat kecil", "1 buah gula merah", "1 sdt gula putih", "1 sdm peres garam"],
     langkah: ["Goreng cabai merah, cabai rawit, bawang merah, dan bawang putih sampai agak layu.", "Angkat, lalu ulek bersama gula, garam, dan terasi goreng.", "Goreng tomat sampai layu dengan api kecil (jangan sampai gosong karena memengaruhi rasa).", "Tambahkan tomat goreng ke dalam ulekan, ulek lagi tapi jangan terlalu halus.", "Sambal siap dihidangkan."] },
-  { id: 13, nama: "Sambal Pecak", jenis: "Makanan", kkal: 35, waktu: "15 menit", porsi: 3, tag: "Sederhana", tagColor: "green", img: "sambal/sambal-pecak.jpg",
+  { id: 13, nama: "Sambal Pecak", jenis: "Makanan", isSambal: true, kkal: 35, waktu: "15 menit", porsi: 3, tag: "Sederhana", tagColor: "green", img: "sambal/sambal-pecak.jpg",
     bahan: ["Cabai merah secukupnya", "Cabai hijau secukupnya", "2 buah tomat", "Bawang merah secukupnya", "Bawang putih secukupnya", "Gula, garam, dan micin secukupnya"],
     langkah: ["Ulek cabai merah dan cabai hijau, tambahkan gula, garam, dan micin.", "Potong tomat, ulek bersama cabai.", "Potong dan goreng bawang, masukkan ke sambal, ulek sebentar.", "Sambal pecak siap disantap."] },
   { id: 15, nama: "Roti Gandum Isi Telur & Alpukat", jenis: "Makanan", kkal: 280, waktu: "10 menit", porsi: 1, tag: "Tinggi Protein", tagColor: "red", img: "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&h=280&fit=crop",
