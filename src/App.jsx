@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { usePersistentState, PersistProvider, usePersistReset } from "./usePersist.jsx";
 import { useAuth } from "./useAuth.js";
 import AuthScreen from "./AuthScreen.jsx";
@@ -581,6 +581,14 @@ function JadwalScreen({ onBack, ping, onNavigate }) {
   const meals = mealsByDay[activeDay] || [];
   const isCheatDay = cheatDays.includes(activeDay);
 
+  useEffect(() => {
+    if (cheatDays.length > 2) {
+      setCheatDays((prev) => prev.slice(0, 2));
+      ping("Cheat Day disesuaikan jadi maksimal 2 hari sesuai aturan diet ya, Boss 😊");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function setMeals(updater) {
     setMealsByDay((prev) => ({
       ...prev,
@@ -597,6 +605,8 @@ function JadwalScreen({ onBack, ping, onNavigate }) {
       }
       setCheatDays((prev) => prev.filter((d) => d !== dayIndex));
       ping(`${DAYS[dayIndex]} bukan Cheat Day lagi`);
+    } else if (cheatDays.length >= 2) {
+      ping("Maksimal 2 hari Cheat Day per minggu, Boss! Matiin salah satu dulu kalau mau ganti hari 😅");
     } else if (cheatDays.length + 1 === 2) {
       setConfirmCheatDay(dayIndex);
     } else {
