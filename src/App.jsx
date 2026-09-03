@@ -1430,11 +1430,52 @@ const sResep = {
 const MENU_ITEMS_PROFIL = [
   { icon: "📋", label: "Data Diri" },
   { icon: "📈", label: "Riwayat Berat Badan" },
-  { icon: "🔔", label: "Notifikasi" },
   { icon: "🌐", label: "Bahasa" },
   { icon: "❓", label: "Bantuan & FAQ" },
   { icon: "ℹ️", label: "Tentang Aplikasi" },
 ];
+
+/* ============================================================
+   NOTIFIKASI PENGINGAT (browser Notification API — gratis)
+============================================================ */
+
+const REMINDERS = [
+  { key: "sarapan", time: "07:00", title: "Waktunya Sarapan! 🍳", body: "Jangan lupa isi Jadwal Diet hari ini biar tetap on track." },
+  { key: "air1", time: "09:00", title: "Minum Air Putih 💧", body: "Udah minum air belum? Yuk isi ulang botolnya." },
+  { key: "snackpagi", time: "10:00", title: "Snack Pagi 🍎", body: "Waktunya camilan ringan — yang ringan aja ya, bukan makan berat." },
+  { key: "makansiang", time: "12:30", title: "Waktunya Makan Siang! 🍚", body: "Cek Jadwal Diet buat lihat menu makan siangmu." },
+  { key: "air2", time: "14:00", title: "Minum Air Putih 💧", body: "Jangan lupa terus terhidrasi sepanjang hari." },
+  { key: "snacksore", time: "16:00", title: "Snack Sore 🍵", body: "Camilan ringan aja buat sore ini." },
+  { key: "makanmalam", time: "17:00", title: "Makan Malam Terakhir 🌙", body: "Ini slot makan terakhir hari ini — setelah ini cukup air putih tawar ya." },
+  { key: "air3", time: "20:00", title: "Minum Air Putih 💧", body: "Sebelum tidur, pastikan cairan tubuh cukup." },
+];
+
+function useMealReminders(enabled) {
+  const firedRef = useRef({});
+
+  useEffect(() => {
+    if (!enabled || typeof window === "undefined" || !("Notification" in window)) return;
+
+    const check = () => {
+      const now = new Date();
+      const hhmm = now.toTimeString().slice(0, 5);
+      const today = now.toISOString().slice(0, 10);
+      REMINDERS.forEach((r) => {
+        const fireKey = `${today}-${r.key}`;
+        if (r.time === hhmm && firedRef.current[fireKey] !== true) {
+          firedRef.current[fireKey] = true;
+          if (Notification.permission === "granted") {
+            try { new Notification(r.title, { body: r.body, icon: "pak-aji.png" }); } catch {}
+          }
+        }
+      });
+    };
+
+    check();
+    const id = setInterval(check, 30000);
+    return () => clearInterval(id);
+  }, [enabled]);
+}
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -1453,6 +1494,26 @@ function ProfilScreen({ onBack, ping, auth, uid, onNavigate }) {
   const [premium, setPremium] = usePersistentState("profil_premium", false);
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [notifEnabled, setNotifEnabled] = usePersistentState("notif_enabled", false);
+
+  async function toggleNotif() {
+    if (notifEnabled) {
+      setNotifEnabled(false);
+      ping("Notifikasi pengingat dimatikan");
+      return;
+    }
+    if (!("Notification" in window)) {
+      ping("Browser ini tidak mendukung notifikasi 😔");
+      return;
+    }
+    const perm = await Notification.requestPermission();
+    if (perm === "granted") {
+      setNotifEnabled(true);
+      ping("Notifikasi pengingat diaktifkan 🔔");
+    } else {
+      ping("Izin notifikasi ditolak — aktifkan lewat pengaturan browser kalau berubah pikiran");
+    }
+  }
 
   function saveNama() { setNama(tempNama.trim() || nama); setEditing(false); ping("Nama berhasil diperbarui ✅"); }
   function adjustBerat(delta) {
@@ -1531,6 +1592,20 @@ function ProfilScreen({ onBack, ping, auth, uid, onNavigate }) {
         )}
 
         <div style={sProfil.menuList}>
+          <div style={sProfil.toggleRow}>
+            <span style={sProfil.menuIcon}>🔔</span>
+            <div style={{ flex: 1 }}>
+              <span style={sProfil.menuLabel}>Notifikasi Pengingat</span>
+              <p style={sProfil.toggleSubtext}>Sarapan, snack, makan malam, & minum air</p>
+            </div>
+            <button
+              onClick={toggleNotif}
+              style={{ ...sProfil.toggleSwitch, ...(notifEnabled ? sProfil.toggleSwitchOn : {}) }}
+              aria-label="Aktifkan notifikasi"
+            >
+              <span style={{ ...sProfil.toggleKnob, ...(notifEnabled ? sProfil.toggleKnobOn : {}) }} />
+            </button>
+          </div>
           {MENU_ITEMS_PROFIL.map((m) => (
             <button
               key={m.label}
@@ -1642,6 +1717,12 @@ const sProfil = {
   bowl: { width: 44, height: 44, borderRadius: 12, background: "rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginLeft: 8, flexShrink: 0 },
   menuList: { marginTop: 18, background: "#fff", borderRadius: 16, border: "1px solid #f1e8dd", boxShadow: "0 4px 10px rgba(0,0,0,.04)", overflow: "hidden" },
   menuRow: { width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "13px 16px", background: "none", border: "none", borderBottom: "1px solid #f7f2ea", cursor: "pointer", textAlign: "left" },
+  toggleRow: { display: "flex", alignItems: "center", gap: 12, padding: "13px 16px", borderBottom: "1px solid #f7f2ea" },
+  toggleSubtext: { fontSize: 10, color: "#8a7b70", marginTop: 2 },
+  toggleSwitch: { width: 42, height: 24, borderRadius: 12, background: "#e3d9cb", border: "none", position: "relative", cursor: "pointer", flexShrink: 0, padding: 0 },
+  toggleSwitchOn: { background: "#3a7d44" },
+  toggleKnob: { position: "absolute", top: 3, left: 3, width: 18, height: 18, borderRadius: "50%", background: "#fff", boxShadow: "0 2px 4px rgba(0,0,0,.2)", transition: "left .2s ease" },
+  toggleKnobOn: { left: 21 },
   menuIcon: { fontSize: 16, width: 20, textAlign: "center" },
   menuLabel: { fontSize: 12.5, fontWeight: 600, color: "#2c1810", flex: 1 },
   menuArrow: { fontSize: 15, color: "#c9bba8" },
@@ -1788,6 +1869,8 @@ function AppShell({ auth, uid }) {
   const [hasOnboarded, setHasOnboarded] = usePersistentState("hasOnboarded", false);
   const [screen, setScreen] = useState(hasOnboarded ? "beranda" : "onboarding");
   const [toast, setToast] = useState("");
+  const [notifEnabled] = usePersistentState("notif_enabled", false);
+  useMealReminders(notifEnabled);
 
   function ping(msg) { setToast(msg); setTimeout(() => setToast(""), 1800); }
   function navigate(target) {
