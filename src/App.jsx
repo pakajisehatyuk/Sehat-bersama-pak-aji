@@ -1450,6 +1450,38 @@ const REMINDERS = [
   { key: "air3", time: "20:00", title: "Minum Air Putih 💧", body: "Sebelum tidur, pastikan cairan tubuh cukup." },
 ];
 
+function useInstallPrompt() {
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [installed, setInstalled] = useState(false);
+
+  useEffect(() => {
+    const onBeforeInstall = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    const onInstalled = () => {
+      setInstalled(true);
+      setDeferredPrompt(null);
+    };
+    window.addEventListener("beforeinstallprompt", onBeforeInstall);
+    window.addEventListener("appinstalled", onInstalled);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onBeforeInstall);
+      window.removeEventListener("appinstalled", onInstalled);
+    };
+  }, []);
+
+  async function promptInstall() {
+    if (!deferredPrompt) return "unavailable";
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    setDeferredPrompt(null);
+    return outcome; // "accepted" | "dismissed"
+  }
+
+  return { canInstall: !!deferredPrompt, installed, promptInstall };
+}
+
 function useMealReminders(enabled) {
   const firedRef = useRef({});
 
@@ -1483,6 +1515,7 @@ function todayStr() {
 
 function ProfilScreen({ onBack, ping, auth, uid, onNavigate }) {
   const resetAll = usePersistReset();
+  const { canInstall, installed, promptInstall } = useInstallPrompt();
   const [nama, setNama] = usePersistentState("profil_nama", auth?.user?.displayName || "Sahabat Sehat");
   const [editing, setEditing] = useState(false);
   const [tempNama, setTempNama] = useState(nama);
@@ -1580,6 +1613,23 @@ function ProfilScreen({ onBack, ping, auth, uid, onNavigate }) {
           <div style={sProfil.statCard}><div style={{ fontSize: 20 }}>🔥</div><b style={sProfil.statVal}>{streak} hari</b><span style={sProfil.statLabel}>Streak Diet</span></div>
           <div style={sProfil.statCard}><div style={{ fontSize: 20 }}>⚖️</div><b style={sProfil.statVal}>{(beratAwal - beratSekarang).toFixed(1)} kg</b><span style={sProfil.statLabel}>Sudah Turun</span></div>
         </div>
+
+        {canInstall && !installed && (
+          <button
+            style={sProfil.installBanner}
+            onClick={async () => {
+              const outcome = await promptInstall();
+              if (outcome === "accepted") ping("Aplikasi terpasang di HP-mu! 🎉");
+              else if (outcome === "dismissed") ping("Boleh dipasang kapan aja lewat menu ini");
+            }}
+          >
+            <div style={sProfil.installIcon}>📲</div>
+            <div style={{ flex: 1, textAlign: "left" }}>
+              <h4 style={sProfil.bannerTitle}>Install ke Layar Utama</h4>
+              <p style={sProfil.bannerDescDark}>Buka lebih cepat kayak aplikasi asli, tanpa buka browser dulu.</p>
+            </div>
+          </button>
+        )}
 
         {!premium && (
           <button style={sProfil.upgradeBanner} onClick={() => { setPremium(true); ping("Selamat! Kamu sekarang Premium 🎉"); }}>
@@ -1711,6 +1761,9 @@ const sProfil = {
   statCard: { flex: 1, background: "#fff", borderRadius: 14, padding: "14px 8px", textAlign: "center", border: "1px solid #f1e8dd", boxShadow: "0 4px 10px rgba(0,0,0,.04)" },
   statVal: { fontSize: 14, color: "#2c1810", display: "block", marginTop: 4 },
   statLabel: { fontSize: 10, color: "#8a7b70" },
+  installBanner: { marginTop: 16, width: "100%", background: "#fff", border: "1.5px solid #d81f27", borderRadius: 18, padding: 16, display: "flex", alignItems: "center", gap: 12, cursor: "pointer" },
+  installIcon: { width: 44, height: 44, borderRadius: 12, background: "#fde3e0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 },
+  bannerDescDark: { fontSize: 10.5, color: "#8a7b70", lineHeight: 1.4 },
   upgradeBanner: { marginTop: 16, width: "100%", background: "linear-gradient(120deg, #b5121a, #7a0e13)", borderRadius: 18, padding: 16, display: "flex", alignItems: "center", color: "#fff", border: "none", cursor: "pointer", boxShadow: "0 10px 20px rgba(181,18,26,.22)" },
   bannerTitle: { fontSize: 13.5, fontWeight: 700, marginBottom: 4 },
   bannerDesc: { fontSize: 10.5, opacity: 0.9, lineHeight: 1.4 },
