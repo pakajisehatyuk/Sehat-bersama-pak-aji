@@ -1660,7 +1660,11 @@ function ProfilScreen({ onBack, ping, auth, uid, onNavigate }) {
             <button
               key={m.label}
               style={sProfil.menuRow}
-              onClick={() => (m.label === "Riwayat Berat Badan" && onNavigate ? onNavigate("riwayat") : ping(`Membuka ${m.label}...`))}
+              onClick={() => {
+                if (m.label === "Riwayat Berat Badan" && onNavigate) onNavigate("riwayat");
+                else if (m.label === "Data Diri" && onNavigate) onNavigate("datadiri");
+                else ping(`Membuka ${m.label}...`);
+              }}
             >
               <span style={sProfil.menuIcon}>{m.icon}</span>
               <span style={sProfil.menuLabel}>{m.label}</span>
@@ -1894,6 +1898,101 @@ const sRiwayat = {
 };
 
 /* ============================================================
+   DATA DIRI
+============================================================ */
+
+const DD_ACTIVITY = {
+  santai: "Jarang Olahraga",
+  ringan: "Olahraga Ringan (1-3x/mgg)",
+  sedang: "Olahraga Sedang (3-5x/mgg)",
+  berat: "Olahraga Berat (6-7x/mgg)",
+};
+const DD_GOAL = {
+  turun: "Turun Berat Badan",
+  jaga: "Jaga Berat Badan",
+  naik: "Naik Berat Badan",
+};
+
+function DataDiriScreen({ onBack, ping, auth }) {
+  const [nama, setNama] = usePersistentState("profil_nama", auth?.user?.displayName || "Sahabat Sehat");
+  const [gender, setGender] = usePersistentState("kalkulator_gender", "pria");
+  const [age, setAge] = usePersistentState("kalkulator_age", 30);
+  const [height, setHeight] = usePersistentState("kalkulator_height", 165);
+  const [weight, setWeight] = usePersistentState("kalkulator_weight", 70);
+  const [activity, setActivity] = usePersistentState("kalkulator_activity", "sedang");
+  const [goal, setGoal] = usePersistentState("kalkulator_goal", "turun");
+
+  const akunLabel = !auth?.isOnline ? "Tersimpan di perangkat ini" : auth?.user?.isAnonymous ? "Akun Tamu" : auth?.user?.email || "";
+
+  return (
+    <>
+      <SubHeader title="Data Diri" onBack={onBack} />
+      <div style={{ padding: "0 22px 30px" }}>
+        <div style={sDD.card}>
+          <label style={sDD.label}>Nama</label>
+          <input style={sDD.input} value={nama} onChange={(e) => setNama(e.target.value)} placeholder="Nama kamu" />
+
+          <label style={sDD.label}>Akun</label>
+          <p style={sDD.readonlyText}>{akunLabel}</p>
+
+          <label style={sDD.label}>Jenis Kelamin</label>
+          <div style={sDD.toggleRow}>
+            <button style={{ ...sDD.toggleBtn, ...(gender === "pria" ? sDD.toggleActive : {}) }} onClick={() => setGender("pria")}>Pria</button>
+            <button style={{ ...sDD.toggleBtn, ...(gender === "wanita" ? sDD.toggleActive : {}) }} onClick={() => setGender("wanita")}>Wanita</button>
+          </div>
+
+          <label style={sDD.label}>Usia: <b style={{ color: "#b5121a" }}>{age} tahun</b></label>
+          <input type="range" min="10" max="80" value={age} onChange={(e) => setAge(Number(e.target.value))} style={sDD.range} />
+
+          <label style={sDD.label}>Tinggi Badan: <b style={{ color: "#b5121a" }}>{height} cm</b></label>
+          <input type="range" min="120" max="210" value={height} onChange={(e) => setHeight(Number(e.target.value))} style={sDD.range} />
+
+          <label style={sDD.label}>Berat Badan: <b style={{ color: "#b5121a" }}>{weight} kg</b></label>
+          <input type="range" min="30" max="150" value={weight} onChange={(e) => setWeight(Number(e.target.value))} style={sDD.range} />
+
+          <label style={sDD.label}>Tingkat Aktivitas</label>
+          <select style={sDD.select} value={activity} onChange={(e) => setActivity(e.target.value)}>
+            {Object.entries(DD_ACTIVITY).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+          </select>
+
+          <label style={sDD.label}>Tujuan Diet</label>
+          <div style={sDD.goalRow}>
+            {Object.entries(DD_GOAL).map(([k, label]) => (
+              <button key={k} style={{ ...sDD.goalBtn, ...(goal === k ? sDD.goalActive : {}) }} onClick={() => setGoal(k)}>{label}</button>
+            ))}
+          </div>
+        </div>
+
+        <div style={sDD.noteCard}>
+          <div style={{ fontSize: 20 }}>💡</div>
+          <p style={sDD.noteText}>Data ini otomatis kepake di <b>Kalkulator Gizi</b> — jadi nggak perlu isi ulang tiap buka kalkulatornya.</p>
+        </div>
+
+        <button style={sDD.saveBtn} onClick={() => ping("Data diri tersimpan ✅")}>Simpan</button>
+      </div>
+    </>
+  );
+}
+
+const sDD = {
+  card: { background: "#fff", borderRadius: 18, padding: 18, border: "1px solid #f1e8dd", boxShadow: "0 4px 10px rgba(0,0,0,.04)", marginTop: 8 },
+  label: { display: "block", fontSize: 12, fontWeight: 600, color: "#2c1810", marginBottom: 8, marginTop: 16 },
+  input: { width: "100%", padding: "10px 12px", borderRadius: 12, border: "1px solid #f1e8dd", background: "#fdf6ee", color: "#2c1810", fontSize: 13, fontFamily: "'Poppins', sans-serif", outline: "none" },
+  readonlyText: { fontSize: 12, color: "#8a7b70", background: "#f7f2ea", padding: "10px 12px", borderRadius: 12 },
+  toggleRow: { display: "flex", gap: 8 },
+  toggleBtn: { flex: 1, padding: "9px 0", borderRadius: 12, border: "1px solid #f1e8dd", background: "#fdf6ee", color: "#8a7b70", fontWeight: 600, fontSize: 12.5, cursor: "pointer" },
+  toggleActive: { background: "#b5121a", color: "#fff", border: "1px solid #b5121a" },
+  range: { width: "100%" },
+  select: { width: "100%", padding: "10px 12px", borderRadius: 12, border: "1px solid #f1e8dd", background: "#fdf6ee", color: "#2c1810", fontSize: 12.5, fontWeight: 500, fontFamily: "'Poppins', sans-serif" },
+  goalRow: { display: "flex", flexDirection: "column", gap: 8 },
+  goalBtn: { padding: "10px 12px", borderRadius: 12, border: "1px solid #f1e8dd", background: "#fdf6ee", color: "#8a7b70", fontWeight: 600, fontSize: 12.5, textAlign: "left", cursor: "pointer" },
+  goalActive: { background: "#fde3e0", color: "#b5121a", border: "1px solid #d81f27" },
+  noteCard: { marginTop: 16, background: "#f2e6d6", borderRadius: 16, padding: 14, display: "flex", alignItems: "center", gap: 12 },
+  noteText: { fontSize: 11.5, color: "#2c1810", lineHeight: 1.5 },
+  saveBtn: { marginTop: 18, width: "100%", background: "#b5121a", color: "#fff", border: "none", padding: 14, borderRadius: 16, fontSize: 13.5, fontWeight: 700, cursor: "pointer", boxShadow: "0 8px 18px rgba(181,18,26,.3)" },
+};
+
+/* ============================================================
    MAIN APP — routing + shell
 ============================================================ */
 
@@ -1954,6 +2053,7 @@ function AppShell({ auth, uid }) {
         {screen === "resep" && <ResepScreen onBack={() => navigate("beranda")} ping={ping} />}
         {screen === "profil" && <ProfilScreen onBack={() => navigate("beranda")} ping={ping} auth={auth} uid={uid} onNavigate={navigate} />}
         {screen === "riwayat" && <RiwayatBeratScreen onBack={() => navigate("profil")} />}
+        {screen === "datadiri" && <DataDiriScreen onBack={() => navigate("profil")} ping={ping} auth={auth} />}
       </div>
 
       {showBottomNav && <BottomNav active={screen} onNavigate={navigate} />}
