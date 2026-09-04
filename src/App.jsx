@@ -1561,6 +1561,38 @@ function ProfilScreen({ onBack, ping, auth, uid, onNavigate }) {
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [notifEnabled, setNotifEnabled] = usePersistentState("notif_enabled", false);
+  const [fotoUrl, setFotoUrl] = usePersistentState("profil_fotoUrl", "");
+  const fileInputRef = useRef(null);
+
+  function handlePhotoChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      ping("File itu bukan gambar, coba pilih foto ya");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const size = 240;
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        const scale = Math.max(size / img.width, size / img.height);
+        const sw = size / scale, sh = size / scale;
+        const sx = (img.width - sw) / 2, sy = (img.height - sh) / 2;
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, size, size);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+        setFotoUrl(dataUrl);
+        ping("Foto profil berhasil diganti 📷");
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }
 
   async function toggleNotif() {
     if (notifEnabled) {
@@ -1601,8 +1633,13 @@ function ProfilScreen({ onBack, ping, auth, uid, onNavigate }) {
       <div style={{ padding: "0 22px" }}>
         <div style={sProfil.avatarBlock}>
           <div style={sProfil.avatarWrap}>
-            <div style={sProfil.avatar}>🧕</div>
-            <button style={sProfil.avatarEdit} onClick={() => ping("Ganti foto profil segera hadir 📷")}>✎</button>
+            {fotoUrl ? (
+              <img src={fotoUrl} alt="Foto profil" style={sProfil.avatarImg} />
+            ) : (
+              <div style={sProfil.avatar}>🧕</div>
+            )}
+            <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handlePhotoChange} />
+            <button style={sProfil.avatarEdit} onClick={() => fileInputRef.current?.click()}>✎</button>
           </div>
           {!editing ? (
             <div style={sProfil.nameRow}>
@@ -1775,6 +1812,7 @@ const sProfil = {
   avatarBlock: { display: "flex", flexDirection: "column", alignItems: "center", marginTop: 6, marginBottom: 18 },
   avatarWrap: { position: "relative" },
   avatar: { width: 84, height: 84, borderRadius: "50%", background: "linear-gradient(135deg,#f7ece0,#f2e6d6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 38, border: "3px solid #fff", boxShadow: "0 8px 20px rgba(0,0,0,.1)" },
+  avatarImg: { width: 84, height: 84, borderRadius: "50%", objectFit: "cover", border: "3px solid #fff", boxShadow: "0 8px 20px rgba(0,0,0,.1)", display: "block" },
   avatarEdit: { position: "absolute", bottom: 0, right: 0, width: 26, height: 26, borderRadius: "50%", background: "#b5121a", color: "#fff", border: "2px solid #fdf6ee", fontSize: 11, cursor: "pointer" },
   nameRow: { display: "flex", alignItems: "center", gap: 6, marginTop: 12 },
   nameText: { fontSize: 17, fontWeight: 700, color: "#2c1810" },
