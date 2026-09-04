@@ -303,7 +303,7 @@ function SubHeader({ title, onBack, right }) {
     <div style={shared.header}>
       <button style={shared.backBtn} onClick={onBack}>‹</button>
       <h2 style={shared.headerTitle}>{title}</h2>
-      <div style={{ width: 34, display: "flex", justifyContent: "flex-end" }}>{right}</div>
+      <div style={{ minWidth: 34, display: "flex", justifyContent: "flex-end", gap: 8 }}>{right}</div>
     </div>
   );
 }
@@ -666,6 +666,35 @@ function JadwalScreen({ onBack, ping, onNavigate }) {
   const sisaKkal = Math.max(0, TARGET_KKAL_JADWAL - doneKkal);
   const pct = Math.min(100, (doneKkal / TARGET_KKAL_JADWAL) * 100);
 
+  async function shareJadwal() {
+    let lines;
+    if (isCheatDay) {
+      lines = [`🎉 *Jadwal Diet - ${DAYS[activeDay]}*`, "", "Hari ini Cheat Day — bebas makan apa saja, tapi tetap secukupnya! 😊"];
+    } else if (sortedMeals.length === 0) {
+      ping("Belum ada menu buat dibagikan hari ini");
+      return;
+    } else {
+      lines = [`🍽️ *Jadwal Diet - ${DAYS[activeDay]}*`, ""];
+      sortedMeals.forEach((m) => {
+        lines.push(`${m.done ? "✅" : "⬜"} ${m.waktu} · *${m.tipe}*`);
+        lines.push(`   ${m.nama} (${m.kkal} kkal)`);
+      });
+      lines.push("", `Total: ${totalKkal.toLocaleString("id-ID")} kkal · Terpakai: ${doneKkal.toLocaleString("id-ID")} / ${TARGET_KKAL_JADWAL.toLocaleString("id-ID")} kkal`);
+    }
+    lines.push("", "— Sehat Bersama Pak Aji 🍲");
+    const text = lines.join("\n");
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ text, title: "Jadwal Diet" });
+        return;
+      } catch {
+        // user cancelled the native share sheet — fall through to WhatsApp link
+      }
+    }
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+  }
+
   function toggleDone(id) {
     setMeals((prev) => prev.map((m) => {
       if (m.id !== id) return m;
@@ -683,7 +712,10 @@ function JadwalScreen({ onBack, ping, onNavigate }) {
   return (
     <>
       <SubHeader title="Jadwal Diet" onBack={onBack} right={
-        <button style={sJadwal.addBtn} onClick={() => onNavigate && onNavigate("resep")}>+</button>
+        <>
+          <button style={sJadwal.shareBtn} onClick={shareJadwal} aria-label="Bagikan jadwal">↗</button>
+          <button style={sJadwal.addBtn} onClick={() => onNavigate && onNavigate("resep")}>+</button>
+        </>
       } />
       <div style={sJadwal.daysRow}>
         {DAYS.map((d, i) => (
@@ -810,6 +842,7 @@ function JadwalScreen({ onBack, ping, onNavigate }) {
 
 const sJadwal = {
   addBtn: { width: 34, height: 34, borderRadius: "50%", background: "#b5121a", border: "none", fontSize: 18, color: "#fff", cursor: "pointer", fontWeight: 700, boxShadow: "0 4px 10px rgba(181,18,26,.3)" },
+  shareBtn: { width: 34, height: 34, borderRadius: "50%", background: "#fff", border: "1px solid #f1e8dd", fontSize: 15, color: "#2c1810", cursor: "pointer", boxShadow: "0 2px 6px rgba(0,0,0,.05)" },
   daysRow: { display: "flex", gap: 8, padding: "0 20px 12px", overflowX: "auto", flexShrink: 0 },
   cheatBadge: { fontSize: 9, marginLeft: 3 },
   cheatRow: { display: "flex", gap: 6, padding: "0 20px 14px", overflowX: "auto", flexShrink: 0, alignItems: "center" },
